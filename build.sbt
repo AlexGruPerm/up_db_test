@@ -4,10 +4,14 @@ ThisBuild / organization := "yakushev"
 ThisBuild / version      := "0.0.1"
 ThisBuild / scalaVersion := "2.12.15"
 
-val Version_zio  = "2.0.0-RC6" 
+  val Versions = new {
+    val zio        = "2.0.5"
+    val zio_config = "3.0.7"
+    val z_http   = "2.0.0-RC11"
+  }
 
-// PROJECTS
-lazy val global = project
+  // PROJECTS
+  lazy val global = project
   .in(file("."))
   .settings(commonSettings)
   .disablePlugins(AssemblyPlugin)
@@ -15,7 +19,7 @@ lazy val global = project
     up_db
   )
 
-lazy val up_db = (project in file("up_db"))
+  lazy val up_db = (project in file("up_db"))
   .settings(
     Compile / mainClass        := Some("app.MainApp"),
     assembly / assemblyJarName := "up_db.jar",
@@ -24,18 +28,22 @@ lazy val up_db = (project in file("up_db"))
     libraryDependencies ++= commonDependencies
   )
 
-lazy val dependencies =
-  new {
-    val zio = "dev.zio" %% "zio" % Version_zio
-    val zio_logging = "dev.zio" %% "zio-logging" % Version_zio
+  lazy val dependencies =
+    new {
+      val zio = "dev.zio" %% "zio" % Versions.zio
 
-    val zioDep = List(zio, zio_logging)
+      val zio_conf          = "dev.zio" %% "zio-config"          % Versions.zio_config
+      val zio_conf_typesafe = "dev.zio" %% "zio-config-typesafe" % Versions.zio_config
+      val zio_conf_magnolia = "dev.zio" %% "zio-config-magnolia" % Versions.zio_config
 
+      val z_http = "io.d11" %% "zhttp" % Versions.z_http
+
+      val zioDep = List(zio, zio_conf,zio_conf_typesafe,zio_conf_magnolia, z_http)
+    }
+
+  val commonDependencies = {
+    dependencies.zioDep
   }
-
-val commonDependencies = {
-  dependencies.zioDep 
-}
 
   lazy val compilerOptions = Seq(
           "-deprecation",
@@ -55,13 +63,13 @@ val commonDependencies = {
     scalacOptions ++= compilerOptions,
     resolvers ++= Seq(
       "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
-      Resolver.sonatypeRepo("snapshots"),
-      Resolver.sonatypeRepo("public"),
-      Resolver.sonatypeRepo("releases"),
       Resolver.DefaultMavenRepository,
       Resolver.mavenLocal,
       Resolver.bintrayRepo("websudos", "oss-releases")
-    )
+    )++
+      Resolver.sonatypeOssRepos("snapshots")
+     ++ Resolver.sonatypeOssRepos("public")
+     ++ Resolver.sonatypeOssRepos("releases")
   )
 
   addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full)
