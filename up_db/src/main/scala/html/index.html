@@ -5,23 +5,24 @@
 <title>UP-Tests SPA Main page</title>  
     <script>
         async function loadJsonTests() {
-         console.log('Begin loading new JSON file with tests into server.');
-         let formData = new FormData();
-         let url = `load_test`;
-         formData.append("file", fileupload.files[0]);
-         let response = await fetch(url, {
-           method: "POST", 
-           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-           },
-           body: formData
-         });    
-          return await response.json();
+             console.log('Begin loading new JSON file with tests into server.');
+             let formData = new FormData();
+             let url = `load_test`;
+             formData.append("file", fileupload.files[0]);
+                 let response = await fetch(url, {
+                   method: "POST",
+                   headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                   },
+                   body: formData
+                 });
+             return response.json();
         }
 
-        function btnUploadTestFile() {
-         console.log(loadJsonTests());
+        async function btnUploadTestFile() {
+             const result = await loadJsonTests();
+             console.log(result);
         }
     </script>
 <style type="text/css"> 

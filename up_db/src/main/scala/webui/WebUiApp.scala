@@ -1,13 +1,17 @@
 package webui
 
+import data.User
 import zhttp.html.Html
 import zhttp.http._
+import zio.json.DecoderOps
 import zio.{Scope, ZIO}
 
 import java.io.IOException
 import scala.io._
 import java.io.{FileInputStream, IOException}
 import java.nio.charset.Charset
+
+
 
 object WebUiApp {
 
@@ -50,8 +54,10 @@ object WebUiApp {
       UserRepo.register(u)
       .map(id => Response.text(id))
       */
-      _ <- ZIO.logInfo(s"req = ${req.body.asString}")
+      //u <- req.body.asString.map(_.fromJson[User])
+      //_ <- ZIO.logInfo(s"req JSON = $js")
       //reqJs <- req.body.asString
+      //resp <- ZIO.succeed(Response.json(reqJs))
       resp <- ZIO.succeed(Response.json("""{"greetings": "Hello World!"}"""))
     } yield resp
 

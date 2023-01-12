@@ -7,7 +7,8 @@ ThisBuild / scalaVersion := "2.12.15"
   val Versions = new {
     val zio        = "2.0.5"
     val zio_config = "3.0.7"
-    val z_http   = "2.0.0-RC11"
+    val z_http     = "2.0.0-RC11"
+    val zio_json   = "0.3.0-RC11"
   }
 
   // PROJECTS
@@ -38,7 +39,9 @@ ThisBuild / scalaVersion := "2.12.15"
 
       val z_http = "io.d11" %% "zhttp" % Versions.z_http
 
-      val zioDep = List(zio, zio_conf,zio_conf_typesafe,zio_conf_magnolia, z_http)
+      val zio_json = "dev.zio"       %% "zio-json"       % Versions.zio_json
+
+      val zioDep = List(zio, zio_conf,zio_conf_typesafe,zio_conf_magnolia, z_http, zio_json )
     }
 
   val commonDependencies = {
