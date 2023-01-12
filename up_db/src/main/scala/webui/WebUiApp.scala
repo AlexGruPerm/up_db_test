@@ -30,7 +30,7 @@ object WebUiApp {
 
   def getMainPage: ZIO[Any, IOException, Response] =
     for {
-      _ <- ZIO.logInfo("getMainPage")
+      _ <- ZIO.logInfo("getMainPage ")
       mainPageContent <- ZIO.scoped{ source(mainPagePath).flatMap { source =>
         ZIO.attemptBlockingIO(source.toList)
       }}
@@ -45,6 +45,7 @@ object WebUiApp {
       ZIO.debug(s"Failed to parse the input: $e").as(
       Response.text(e).setStatus(Status.BadRequest)
       )
+
       case Right(u) =>
       UserRepo.register(u)
       .map(id => Response.text(id))
