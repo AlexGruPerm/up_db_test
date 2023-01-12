@@ -1,0 +1,55 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head> 
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>UP-Tests SPA Main page</title>  
+    <script>
+        async function loadJsonTests() {
+         console.log('Begin loading new JSON file with tests into server.');
+         let formData = new FormData();
+         let url = `load_test`;
+         formData.append("file", fileupload.files[0]);
+         let response = await fetch(url, {
+           method: "POST", 
+           headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+           },
+           body: formData
+         });    
+          return await response.json();
+        }
+
+        function btnUploadTestFile() {
+         console.log(loadJsonTests());
+        }
+    </script>
+<style type="text/css"> 
+<!--
+body {
+	color:#000000;
+	margin:0;
+}
+-->
+</style>
+</head>
+<body>
+    <table width="100%" border="2">
+        <tr>
+            <td width="70%" height="200px">
+                <input id="fileupload" type="file" name="fileupload" />
+                <br>
+                <div id="btn_upload_test_file" onclick="btnUploadTestFile()">select json file</div>
+            </td><td>2</td>
+        </tr>
+        <tr>
+            <td height="600px">
+                <div id="test_list">Upload file into server</div>
+            </td><td>4</td>
+        </tr>
+        <tr>
+            <td height="100px">5</td><td>6</td>
+        </tr>
+    </table>
+</body>
+</html>
