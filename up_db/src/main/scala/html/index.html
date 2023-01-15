@@ -4,25 +4,40 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>UP-Tests SPA Main page</title>  
     <script>
+        function loadFile(file){
+            return new Promise(resolve=>{
+                let reader = new FileReader()
+                reader.onload = function(event) {
+                    let data = event.target.result
+                    resolve(data)
+                }
+                reader.readAsText(file)
+            })
+        }
+
         async function loadJsonTests() {
              console.log('Begin loading new JSON file with tests into server.');
-             let formData = new FormData();
-             let url = `load_test`;
-             formData.append("file", fileupload.files[0]);
-                 let response = await fetch(url, {
+             var file = fileupload.files[0];
+             var fileContent = await loadFile(file);
+             console.log('-- request ----------------------------------------------');
+             console.log(fileContent);
+             console.log('---------------------------------------------------------');
+              const response = await fetch(`load_test`, {
                    method: "POST",
                    headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                    },
-                   body: formData
+                   body: fileContent
                  });
              return response.json();
         }
 
         async function btnUploadTestFile() {
-             const result = await loadJsonTests();
-             console.log(result);
+             const resultJson = await loadJsonTests();
+             console.log('-- response ---------------------------------------------');
+             console.log(resultJson);
+             console.log('---------------------------------------------------------');
         }
     </script>
 <style type="text/css"> 
@@ -40,7 +55,7 @@ body {
             <td width="70%" height="200px">
                 <input id="fileupload" type="file" name="fileupload" />
                 <br>
-                <div id="btn_upload_test_file" onclick="btnUploadTestFile()">select json file</div>
+                <div id="btn_upload_test_file" onclick="btnUploadTestFile()">send json file</div>
             </td><td>2</td>
         </tr>
         <tr>

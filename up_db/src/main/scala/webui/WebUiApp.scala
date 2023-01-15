@@ -3,7 +3,7 @@ package webui
 import data.User
 import zhttp.html.Html
 import zhttp.http._
-import zio.json.DecoderOps
+import zio.json.{DecoderOps, EncoderOps}
 import zio.{Scope, ZIO}
 
 import java.io.IOException
@@ -12,7 +12,10 @@ import java.io.{FileInputStream, IOException}
 import java.nio.charset.Charset
 
 
-
+/**
+ * https://zio.github.io/zio-http/docs/v1.x/dsl/request
+ * https://zio.github.io/zio-http/docs/v1.x/examples/advanced-examples/stream-file
+*/
 object WebUiApp {
 
   def acquire(name: => String): ZIO[Any, IOException, Source] =
@@ -41,26 +44,44 @@ object WebUiApp {
       resp <- ZIO.succeed(Response.html(mainPageContent.mkString))
     } yield resp
 
+  //CharsetUtil.UTF_8
   def loadTest(req: Request): ZIO[Any, Throwable, Response] =
-    for {/*
-      u <- req.bodyAsString.map(_.fromJson[User])
-      r <- u match
-      case Left(e) =>
-      ZIO.debug(s"Failed to parse the input: $e").as(
-      Response.text(e).setStatus(Status.BadRequest)
-      )
+    for {
+/*      _ <- ZIO.foreach(req.headers.toList) {elm =>
+         ZIO.logInfo(s"header = $elm")
+      }*/
+      bodyAsStr <- req.body.asString
+      _ <- ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~") *>
+        ZIO.logInfo(s"bodyAsStr = $bodyAsStr") *>
+        ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
-      case Right(u) =>
-      UserRepo.register(u)
-      .map(id => Response.text(id))
-      */
-      //u <- req.body.asString.map(_.fromJson[User])
-      //_ <- ZIO.logInfo(s"req JSON = $js")
-      //reqJs <- req.body.asString
-      //resp <- ZIO.succeed(Response.json(reqJs))
-      resp <- ZIO.succeed(Response.json("""{"greetings": "Hello World!"}"""))
+      u <- req.body.asString.map(_.fromJson[User])
+      resp <- u match {
+        case Left(e) =>
+          ZIO.debug(s"Failed to parse the input: $e").as(
+            Response.text(e).setStatus(Status.BadRequest)
+          )
+        case Right(u) => ZIO.logInfo(s"Success send response with ${u.copy(u.name,u.age+10).toJson}") *>
+          ZIO.succeed(Response.json(u.copy(u.name,u.age+10).toJson))
+      }
     } yield resp
 
+  /*
+  def loadTest(req: Request): ZIO[Any, Throwable, Response] =
+    for {
+      bodyStr <- req.body.asString
+      _ <- ZIO.logInfo(s"req JSON str = $bodyStr")
+      u <- req.body.asString.map(_.fromJson[User])
+      resp <- u match {
+        case Left(e) =>
+          ZIO.debug(s"Failed to parse the input: $e").as(
+            Response.text(e).setStatus(Status.BadRequest)
+          )
+        case Right(u) =>
+          ZIO.succeed(Response.json(u.toJson))
+      }
+    } yield resp
+  */
 
   def apply(): Http[Any, Throwable, Request, Response] =
     Http.collectZIO[Request] {
@@ -70,6 +91,11 @@ object WebUiApp {
     }
 
 
+  /*
+  u <- req.body.asString.map(_.fromJson[User])
+  _ <- ZIO.logInfo(s"req JSON user = $u")
+  resp <- ZIO.succeed(Response.json("""{"greetings": "Hello World!"}"""))
+  */
 
 }
 
