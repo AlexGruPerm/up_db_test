@@ -1,6 +1,8 @@
 package webui
 
 import data.User
+import error.InputJsonParsingError
+import tmodel.{RespTest, RespTestModel, Session, TestModel}
 import zhttp.html.Html
 import zhttp.http._
 import zio.json.{DecoderOps, EncoderOps}
@@ -44,6 +46,8 @@ object WebUiApp {
       resp <- ZIO.succeed(Response.html(mainPageContent.mkString))
     } yield resp
 
+  import tmodel.EncDecTestModelImplicits._
+  import tmodel.EncDecRespTestModelImplicits._
   //CharsetUtil.UTF_8
   def loadTest(req: Request): ZIO[Any, Throwable, Response] =
     for {
@@ -55,14 +59,29 @@ object WebUiApp {
         ZIO.logInfo(s"bodyAsStr = $bodyAsStr") *>
         ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
-      u <- req.body.asString.map(_.fromJson[User])
+      u <- req.body.asString.map(_.fromJson[TestModel])
+        .catchAllDefect{
+        case e: Exception => ZIO.succeed(Left(e.getMessage))
+      }
+
       resp <- u match {
         case Left(e) =>
-          ZIO.debug(s"Failed to parse the input: $e").as(
+          ZIO.logError(s"Failed to parse the input: $e").as(
             Response.text(e).setStatus(Status.BadRequest)
+            //Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson).setStatus(Status.BadRequest)
           )
-        case Right(u) => ZIO.logInfo(s"Success send response with ${u.copy(u.name,u.age+10).toJson}") *>
-          ZIO.succeed(Response.json(u.copy(u.name,u.age+10).toJson))
+/*          ZIO.logError(s"Failed to parse the input: $e").as(
+            Response.text(e).setStatus(Status.BadRequest)
+          )*/
+        case Right(_)/*Right(u)*/ =>
+          //ZIO.logInfo(s"Success send response with ${u.copy(u.name,u.age+10).toJson}") *>
+          ZIO.succeed(Response.json(RespTestModel(
+            Session("12Rt3eGTgr46fr"),
+            Some(List(
+              RespTest(1,"Test of cursor"),
+              RespTest(2,"Check exception existence"),
+              RespTest(3,"Check returned rows")))
+          ).toJson))
       }
     } yield resp
 
@@ -87,7 +106,7 @@ object WebUiApp {
     Http.collectZIO[Request] {
       case Method.GET  -> !! / "greet" / name => getGreet(name)
       case Method.GET  -> !! / "main" => getMainPage
-      case req@(Method.POST -> !! / "load_test") => loadTest(req)
+      case req@(Method.POST -> !! / "load_test") => loadTest(req)//.catchAllDefect(case e: Exception => )
     }
 
 

@@ -1,9 +1,22 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-<head> 
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>UP-Tests SPA Main page</title>  
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>UP-Tests SPA Main page</title>
     <script>
+        var globalSessionId;
+        // tdForThisTickerId.className = 'td-ticker';
+
+        function parse_response_populate_tests(tests_json){
+          globalSessionId = tests_json.session.id;
+          console.log("SessionId : ",globalSessionId);
+          const tests_container = document.getElementById("test_list");
+            for (test of tests_json.tests) {
+                //console.log(test);
+                tests_container.innerHTML += `<input type="checkbox" id="test_${test.id}" name="test_${test.id}" checked=true><label for="test_${test.id}" class="test_undefined">${test.name}</label><br/>`;
+            }
+        }
+
         function loadFile(file){
             return new Promise(resolve=>{
                 let reader = new FileReader()
@@ -38,34 +51,54 @@
              console.log('-- response ---------------------------------------------');
              console.log(resultJson);
              console.log('---------------------------------------------------------');
+             parse_response_populate_tests(resultJson);
         }
     </script>
-<style type="text/css"> 
+    <style type="text/css">
 <!--
 body {
 	color:#000000;
 	margin:0;
 }
+.label {
+    width: 180px;
+    height: 50px;
+    border-radius: 4px;
+    text-align: center;
+    cursor: pointer;
+    display: block;
+    font: 14px/50px Tahoma;
+    transition: all 0.18s ease-in-out;
+    border: 1px solid #333;
+    color: #333;
+}
+.test_container { border:1px solid #ccc; width:100%; height: 200px; overflow-y: scroll; top: 0;  left: 0;}
+
+.test_undefined{color: black;}
+.test_fail{color: red;}
+.test_success{color: green;}
+.test_executing{color: grey;}
 -->
 </style>
 </head>
 <body>
-    <table width="100%" border="2">
-        <tr>
-            <td width="70%" height="200px">
-                <input id="fileupload" type="file" name="fileupload" />
-                <br>
-                <div id="btn_upload_test_file" onclick="btnUploadTestFile()">send json file</div>
-            </td><td>2</td>
-        </tr>
-        <tr>
-            <td height="600px">
-                <div id="test_list">Upload file into server</div>
-            </td><td>4</td>
-        </tr>
-        <tr>
-            <td height="100px">5</td><td>6</td>
-        </tr>
-    </table>
+<table width="100%" border="2">
+    <tr>
+        <td width="70%" height="200px">
+            <input id="fileupload" type="file" accept=".json" name="fileupload" />
+            <br><br>
+            <div id="btn_upload_test_file" onclick="btnUploadTestFile()"  class="label">send json file</div>
+        </td><td>2</td>
+    </tr>
+    <tr>
+        <td height="600px" >
+            <div id="test_list" class="test_container">
+            </div>
+        </td><td>4</td>
+    </tr>
+    <tr>
+        <td height="100px">5</td><td>6</td>
+    </tr>
+</table>
 </body>
 </html>
