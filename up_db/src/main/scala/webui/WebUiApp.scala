@@ -67,12 +67,8 @@ object WebUiApp {
       resp <- u match {
         case Left(e) =>
           ZIO.logError(s"Failed to parse the input: $e").as(
-            //Response.text(e).setStatus(Status.BadRequest)
             Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson).setStatus(Status.BadRequest)
           )
-/*          ZIO.logError(s"Failed to parse the input: $e").as(
-            Response.text(e).setStatus(Status.BadRequest)
-          )*/
         case Right(_)/*Right(u)*/ =>
           //ZIO.logInfo(s"Success send response with ${u.copy(u.name,u.age+10).toJson}") *>
           ZIO.succeed(Response.json(RespTestModel(
