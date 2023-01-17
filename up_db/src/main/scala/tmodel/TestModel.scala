@@ -20,40 +20,43 @@ sealed trait RetType
   case object select_dataset extends RetType
   case object integer_value extends RetType
 
-/*
-  sealed abstract class SucCond(@nowarn name:String)
+sealed trait SucCond
+  case object rows_gt extends SucCond
+  //case object rows_eq extends SucCond("rows_eq")
+  case object resp_time_ms extends SucCond
+  //case object no_exception extends SucCond("no_exception")
+  //case object exception extends SucCond("exception")
+
+
+/*  sealed abstract class SucCond(@nowarn name:String)
   object SucCond{
     case object rows_gt extends SucCond("SucCond")
     case object rows_eq extends SucCond("rows_eq")
     case object resp_time_ms extends SucCond("resp_time_ms")
     case object no_exception extends SucCond("no_exception")
     case object exception extends SucCond("exception")
-  }
-*/
+  }*/
+
+  case class SucCondElement(condition: SucCond, checkValue: Int)
+
 
   case class TestsMeta(connect_ip: String,
                        db_name: String,
                        db_user: String,
                        db_password: String)
-/*
-  object TypeAliases {
-    type SucCondType = (SucCond, Int)
-  }
-*/
 
   case class Test(name: String,
                   call_type: CallType,
                   ret_type: RetType,
-                  call: String,/*
-                  success_condition: List[Option[TypeAliases.SucCondType]]
-                 */
+                  call: String,
+                  success_condition: Option[List[SucCondElement]]
                  )
 
   case class TestModel(meta: TestsMeta, tests: Option[List[Test]])
 
   object EncDecTestModelImplicits{
-    implicit val encoderCallType: JsonEncoder[CallType] = DeriveJsonEncoder.gen[CallType]
 
+    implicit val encoderCallType: JsonEncoder[CallType] = DeriveJsonEncoder.gen[CallType]
     implicit val decoder: JsonDecoder[CallType] = JsonDecoder[String].map {
       case "procedure" => procedure
       case "function" => function
@@ -61,13 +64,35 @@ sealed trait RetType
     }
 
     implicit val encoderRetType: JsonEncoder[RetType] = DeriveJsonEncoder.gen[RetType]
-
     implicit val decoderRetType: JsonDecoder[RetType] = JsonDecoder[String].map {
       case "cursor" => cursor
       case "select_dataset" => select_dataset
       case "integer_value" => integer_value
       case anyValue => throw new Exception(s"Invalid value in field ret_type = $anyValue")
     }
+
+    implicit val encoderSucCond: JsonEncoder[SucCond] = DeriveJsonEncoder.gen[SucCond]
+    implicit val decoderSucCond: JsonDecoder[SucCond] = JsonDecoder[String].map {
+      case "rows_gt" => rows_gt
+      case "resp_time_ms" => resp_time_ms
+      case anyValue => throw new Exception(s"Invalid value in field inside success_condition = $anyValue")
+    }
+
+/*    implicit val encoderSucCondPair: JsonEncoder[SucCondElement] = DeriveJsonEncoder.gen[SucCondElement]
+    implicit val decoderSucCondPair: JsonDecoder[SucCondElement] = JsonDecoder[(String,Int)].map {
+      case  (s: String, intVal: Int) if s=="rows_gt"      => SucCondElement(rows_gt,intVal)
+      case  (s: String, intVal: Int) if s=="resp_time_ms" => SucCondElement(resp_time_ms,intVal)
+      case anyValue => throw new Exception(s"Invalid value in field inside success_condition = $anyValue")
+    }*/
+
+    implicit val encoderSucCondElement: JsonEncoder[SucCondElement] = DeriveJsonEncoder.gen[SucCondElement]
+    implicit val decoderSucCondElement: JsonDecoder[SucCondElement] = DeriveJsonDecoder.gen[SucCondElement]
+
+/*
+    implicit val encoderSucCondType: JsonEncoder[SucCondType] = DeriveJsonEncoder.gen[SucCondType]
+    implicit val decoderSucCondType: JsonDecoder[SucCondType] = DeriveJsonDecoder.gen[SucCondType]
+*/
+
 
     implicit val encoderTestsMeta: JsonEncoder[TestsMeta] = DeriveJsonEncoder.gen[TestsMeta]
     implicit val decoderTestsMeta: JsonDecoder[TestsMeta] = DeriveJsonDecoder.gen[TestsMeta]
