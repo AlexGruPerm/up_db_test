@@ -5,7 +5,8 @@
     <title>UP-Tests SPA Main page</title>
     <script>
         var globalSessionId;
-        // tdForThisTickerId.className = 'td-ticker';
+        var responseStatus;
+        var responseText;
 
         function parse_response_populate_tests(tests_json){
           globalSessionId = tests_json.session.id;
@@ -35,15 +36,25 @@
              console.log('-- request ----------------------------------------------');
              console.log(fileContent);
              console.log('---------------------------------------------------------');
-              const response = await fetch(`load_test`, {
-                   method: "POST",
-                   headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                   },
-                   body: fileContent
-                 });
-             return response.json();
+               const response = await fetch(`load_test`, {
+                    method: "POST",
+                    headers: {
+                     'Accept': 'application/json',
+                     'Content-Type': 'application/json'
+                    },
+                    body: fileContent
+                  });
+               responseStatus = response.status;
+                   if (responseStatus == 400) {
+                     console.log('-- error ----------------------------------------------');
+                     console.log('Response status = ',responseStatus);
+                     responseText = await response.text();
+                     console.log('Response text = ',responseText);
+                     console.log('---------------------------------------------------------');
+                     return response;
+                   } else {
+                     return response.json();
+                   }
         }
 
         async function btnUploadTestFile() {
@@ -51,7 +62,15 @@
              console.log('-- response ---------------------------------------------');
              console.log(resultJson);
              console.log('---------------------------------------------------------');
-             parse_response_populate_tests(resultJson);
+             const tests_container = document.getElementById("test_list");
+               if (responseStatus == 400) {
+                 tests_container.className = 'error_msg';
+                 tests_container.innerHTML = `ERROR:<br/> ${JSON.parse(responseText).message}`;
+               } else {
+                 tests_container.classList.remove('error_msg');
+                 tests_container.innerHTML = "";
+                 parse_response_populate_tests(resultJson);
+               }
         }
     </script>
     <style type="text/css">
@@ -78,6 +97,8 @@ body {
 .test_fail{color: red;}
 .test_success{color: green;}
 .test_executing{color: grey;}
+
+.error_msg{color: red; font-size: 16px;}
 -->
 </style>
 </head>
