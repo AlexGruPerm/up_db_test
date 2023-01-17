@@ -14,6 +14,14 @@ trait TestsRepo {
   def lookup(sid: SessionId): UIO[Option[TestModelRepo]]
 
 }
+/*
+case class TestRepo() extends TestRepo{
+  def create(testModel: TestModel) : ZIO[TestRepo, Throwable, String]  =
+    ZIO.serviceWithZIO[TestRepo](_.create(testModel))
+
+  def lookup(sid: SessionId): ZIO[TestRepo, Throwable, Option[TestModelRepo]] =
+    ZIO.serviceWithZIO[TestRepo](_.lookup(sid))
+}*/
 
 case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extends TestsRepo {
   def create(testModel: TestModel) :Task[SessionId] = for {

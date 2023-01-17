@@ -1,6 +1,7 @@
 package webui
 
-import data.{TestsRepo}
+
+import data.{ImplTestsRepo, TestsRepo}
 import error.InputJsonParsingError
 import tmodel.{RespTest, RespTestModel, Session, TestModel}
 import zhttp.html.Html
@@ -48,12 +49,15 @@ object WebUiApp {
 
   import tmodel.EncDecTestModelImplicits._
   import tmodel.EncDecRespTestModelImplicits._
+  import data.TestsRepo
   //CharsetUtil.UTF_8
-  def loadTest(req: Request): ZIO[Any, Throwable, Response] =
+  def loadTest(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
     for {
 /*      _ <- ZIO.foreach(req.headers.toList) {elm =>
          ZIO.logInfo(s"header = $elm")
       }*/
+      //tr <- ZIO.service[TestsRepo]
+
       bodyAsStr <- req.body.asString
       _ <- ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~") *>
         ZIO.logInfo(s"bodyAsStr = $bodyAsStr") *>
@@ -64,6 +68,8 @@ object WebUiApp {
         case e: Exception => ZIO.succeed(Left(e.getMessage))
       }
 
+
+
       resp <- u match {
         case Left(e) =>
           ZIO.logError(s"Failed to parse the input: $e").as(
@@ -71,15 +77,15 @@ object WebUiApp {
           )
         case Right(testsWithMeta) =>
           //ZIO.logInfo(s"Success send response with ${u.copy(u.name,u.age+10).toJson}") *>
-
-
+          //tr.create(testsWithMeta).map { sid =>
           ZIO.succeed(Response.json(RespTestModel(
-            Session("12Rt3eGTgr46fr"),
+            Session("1w4fvx12345er12g"),
             Some(List(
-              RespTest(1,"Test of cursor"),
-              RespTest(2,"Check exception existence"),
-              RespTest(3,"Check returned rows")))
+              RespTest(1, "Test of cursor"),
+              RespTest(2, "Check exception existence"),
+              RespTest(3, "Check returned rows")))
           ).toJson))
+         //}
       }
     } yield resp
 
@@ -100,7 +106,7 @@ object WebUiApp {
     } yield resp
   */
 
-  def apply(): Http[TestsRepo, Throwable, Request, Response] =
+  def apply(): Http[ImplTestsRepo, Throwable, Request, Response] =
     Http.collectZIO[Request] {
       case Method.GET  -> !! / "greet" / name => getGreet(name)
       case Method.GET  -> !! / "main" => getMainPage
