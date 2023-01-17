@@ -1,6 +1,6 @@
 package webui
 
-import data.User
+import data.{TestsRepo}
 import error.InputJsonParsingError
 import tmodel.{RespTest, RespTestModel, Session, TestModel}
 import zhttp.html.Html
@@ -69,8 +69,10 @@ object WebUiApp {
           ZIO.logError(s"Failed to parse the input: $e").as(
             Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson).setStatus(Status.BadRequest)
           )
-        case Right(_)/*Right(u)*/ =>
+        case Right(testsWithMeta) =>
           //ZIO.logInfo(s"Success send response with ${u.copy(u.name,u.age+10).toJson}") *>
+
+
           ZIO.succeed(Response.json(RespTestModel(
             Session("12Rt3eGTgr46fr"),
             Some(List(
@@ -98,11 +100,11 @@ object WebUiApp {
     } yield resp
   */
 
-  def apply(): Http[Any, Throwable, Request, Response] =
+  def apply(): Http[TestsRepo, Throwable, Request, Response] =
     Http.collectZIO[Request] {
       case Method.GET  -> !! / "greet" / name => getGreet(name)
       case Method.GET  -> !! / "main" => getMainPage
-      case req@(Method.POST -> !! / "load_test") => loadTest(req)//.catchAllDefect(case e: Exception => )
+      case req@(Method.POST -> !! / "load_test") => loadTest(req)
     }
 
 
