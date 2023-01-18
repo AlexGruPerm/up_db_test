@@ -1,7 +1,7 @@
 package webui
 
 
-import data.{ImplTestsRepo, TestsRepo}
+import data.{ImplTestsRepo, TestsRepo, checkTestRepoData}
 import error.InputJsonParsingError
 import tmodel.{RespTest, RespTestModel, Session, TestModel}
 import zhttp.html.Html
@@ -47,28 +47,31 @@ object WebUiApp {
       resp <- ZIO.succeed(Response.html(mainPageContent.mkString))
     } yield resp
 
+  import data.EncDeccheckTestRepoDataImplicits._
+  def checkTestsRepo: ZIO[ImplTestsRepo, IOException, Response] =
+    for {
+      _ <- ZIO.logInfo("checkTestsRepo ")
+      tr <- ZIO.service[ImplTestsRepo]
+      cnt <- tr.elementsCnt
+      resp <- ZIO.succeed(Response.json(checkTestRepoData(cnt).toJson))
+    } yield resp
+
   import tmodel.EncDecTestModelImplicits._
   import tmodel.EncDecRespTestModelImplicits._
   import data.TestsRepo
   //CharsetUtil.UTF_8
   def loadTest(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
     for {
-/*      _ <- ZIO.foreach(req.headers.toList) {elm =>
-         ZIO.logInfo(s"header = $elm")
-      }*/
-      //tr <- ZIO.service[TestsRepo]
-
-      bodyAsStr <- req.body.asString
+      tr <- ZIO.service[ImplTestsRepo]
+/*      bodyAsStr <- req.body.asString
       _ <- ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~") *>
         ZIO.logInfo(s"bodyAsStr = $bodyAsStr") *>
-        ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")*/
 
       u <- req.body.asString.map(_.fromJson[TestModel])
         .catchAllDefect{
         case e: Exception => ZIO.succeed(Left(e.getMessage))
       }
-
-
 
       resp <- u match {
         case Left(e) =>
@@ -78,47 +81,29 @@ object WebUiApp {
         case Right(testsWithMeta) =>
           //ZIO.logInfo(s"Success send response with ${u.copy(u.name,u.age+10).toJson}") *>
           //tr.create(testsWithMeta).map { sid =>
+          tr.create(testsWithMeta).flatMap{sid =>
+            ZIO.logInfo(s"SID=$sid") *>
           ZIO.succeed(Response.json(RespTestModel(
-            Session("1w4fvx12345er12g"),
+            Session(sid/*"1w4fvx12345er12g"*/),
             Some(List(
               RespTest(1, "Test of cursor"),
               RespTest(2, "Check exception existence"),
               RespTest(3, "Check returned rows")))
           ).toJson))
+      }
          //}
       }
     } yield resp
 
-  /*
-  def loadTest(req: Request): ZIO[Any, Throwable, Response] =
-    for {
-      bodyStr <- req.body.asString
-      _ <- ZIO.logInfo(s"req JSON str = $bodyStr")
-      u <- req.body.asString.map(_.fromJson[User])
-      resp <- u match {
-        case Left(e) =>
-          ZIO.debug(s"Failed to parse the input: $e").as(
-            Response.text(e).setStatus(Status.BadRequest)
-          )
-        case Right(u) =>
-          ZIO.succeed(Response.json(u.toJson))
-      }
-    } yield resp
-  */
+
 
   def apply(): Http[ImplTestsRepo, Throwable, Request, Response] =
     Http.collectZIO[Request] {
       case Method.GET  -> !! / "greet" / name => getGreet(name)
       case Method.GET  -> !! / "main" => getMainPage
       case req@(Method.POST -> !! / "load_test") => loadTest(req)
+      case Method.GET  -> !! / "check" => checkTestsRepo
     }
-
-
-  /*
-  u <- req.body.asString.map(_.fromJson[User])
-  _ <- ZIO.logInfo(s"req JSON user = $u")
-  resp <- ZIO.succeed(Response.json("""{"greetings": "Hello World!"}"""))
-  */
 
 }
 

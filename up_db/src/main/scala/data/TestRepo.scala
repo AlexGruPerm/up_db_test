@@ -13,25 +13,22 @@ trait TestsRepo {
 
   def lookup(sid: SessionId): UIO[Option[TestModelRepo]]
 
-}
-/*
-case class TestRepo() extends TestRepo{
-  def create(testModel: TestModel) : ZIO[TestRepo, Throwable, String]  =
-    ZIO.serviceWithZIO[TestRepo](_.create(testModel))
+  def elementsCnt :UIO[Int]
 
-  def lookup(sid: SessionId): ZIO[TestRepo, Throwable, Option[TestModelRepo]] =
-    ZIO.serviceWithZIO[TestRepo](_.lookup(sid))
-}*/
+}
 
 case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extends TestsRepo {
   def create(testModel: TestModel) :Task[SessionId] = for {
     sid <- Random.nextUUID.map(_.toString)
+    _ <- ZIO.logInfo(s"ImplTestsRepo.create generated sid = $sid")
     _ <- ref.update(test => test + (sid -> TestModelRepo(testModel)))
+    _ <- ZIO.logInfo(s"ref COUNT = ${ref.get.map(_.size)}")
   } yield sid
 
-  def lookup(sid: SessionId): UIO[Option[TestModelRepo]] = {
+  def lookup(sid: SessionId): UIO[Option[TestModelRepo]] =
     ref.get.map(_.get(sid))
-  }
+
+  def elementsCnt :UIO[Int] = ref.get.map(_.size)
 
 }
 
