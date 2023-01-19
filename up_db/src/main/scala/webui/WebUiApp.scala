@@ -84,7 +84,7 @@ object WebUiApp {
           tr.create(testsWithMeta).flatMap{sid =>
             ZIO.logInfo(s"SID=$sid") *>
           ZIO.succeed(Response.json(RespTestModel(
-            Session(sid/*"1w4fvx12345er12g"*/),
+            Session(sid),
             Some(List(
               RespTest(1, "Test of cursor"),
               RespTest(2, "Check exception existence"),
