@@ -86,7 +86,7 @@ object WebUiApp {
                 optTests =>
                     Response.json(RespTestModel(
                       Session(sid),
-                      Some(optTests.getOrElse(List[TestInRepo]()).map{trp => RespTest(trp.id, trp.name)})
+                      optTests.map{trp => trp.map{t => RespTest(t.id, t.name)}}
                     ).toJson)
               }
          }
