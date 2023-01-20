@@ -1,6 +1,7 @@
 package webui
 
 
+import common.types.TestInRepo
 import data.{ImplTestsRepo, TestsRepo, checkTestRepoData}
 import error.InputJsonParsingError
 import tmodel.{RespTest, RespTestModel, Session, TestModel}
@@ -79,23 +80,23 @@ object WebUiApp {
             Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson).setStatus(Status.BadRequest)
           )
         case Right(testsWithMeta) =>
-          //ZIO.logInfo(s"Success send response with ${u.copy(u.name,u.age+10).toJson}") *>
-          //tr.create(testsWithMeta).map { sid =>
           tr.create(testsWithMeta).flatMap{sid =>
-            ZIO.logInfo(s"SID=$sid") *>
-          ZIO.succeed(Response.json(RespTestModel(
-            Session(sid),
-            Some(List(
-              RespTest(1, "Test of cursor"),
-              RespTest(2, "Check exception existence"),
-              RespTest(3, "Check returned rows")))
-          ).toJson))
-      }
-         //}
+            ZIO.logInfo(s"SID = $sid") *>
+              tr.testsList(sid).map{
+                optTests =>
+                    Response.json(RespTestModel(
+                      Session(sid),
+                      Some(optTests.getOrElse(List[TestInRepo]()).map{trp => RespTest(trp.id, trp.name)})
+                    ).toJson)
+              }
+         }
       }
     } yield resp
 
-
+  /*ZIO.succeed(
+    Response.json(RespTestModel(
+      Session(sid),
+      Some(List(RespTest(1, "Test of cursor")).toJson))*/
 
   def apply(): Http[ImplTestsRepo, Throwable, Request, Response] =
     Http.collectZIO[Request] {
