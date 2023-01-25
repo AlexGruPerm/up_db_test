@@ -109,7 +109,7 @@ object WebUiApp {
           )
         case Right(testsToRun) =>
           ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}") *>
-          //todo: Here we need create and fork effect (Throwable. add .catchAllDefect) that will execute tests and save results back into ref.
+          //todo: Here we need create and fork effect (PgLayer,Throwable,Unit. add .catchAllDefect) that will execute tests and save results back into ref.
           // depends on ref and SID + List(id) as input parameters.
           // return ().
           ZIO.succeed(Response.json(InputJsonParsingError("OK start tests").toJson))
