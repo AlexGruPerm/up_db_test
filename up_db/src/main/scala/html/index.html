@@ -7,6 +7,8 @@
         var globalSessionId;
         var responseStatus;
         var responseText;
+        var checkedTestId;
+        var checkedTestIdJson;
 
         function parse_response_populate_tests(tests_json){
           globalSessionId = tests_json.session.id;
@@ -72,6 +74,17 @@
                  parse_response_populate_tests(resultJson);
                }
         }
+
+        function btnStartTests(){
+          console.log('-- start tests ---------------------------------------------');
+          const tests_container = document.getElementById("test_list");
+          checkedTestId = Array.from(tests_container.querySelectorAll("input[type=checkbox]:checked"))
+            .map((elem) => parseInt(elem.id.replace("test_","")));
+          checkedTestIdJson = JSON.parse(JSON.stringify(checkedTestId));
+          console.log(checkedTestIdJson);
+          console.log('---------------------------------------------------------');
+        }
+
     </script>
     <style type="text/css">
 <!--
@@ -118,7 +131,10 @@ body {
         </td><td>4</td>
     </tr>
     <tr>
-        <td height="100px">5</td><td>6</td>
+        <td height="100px">
+            <br><br>
+            <div id="btn_start_tests" onclick="btnStartTests()" class="label">Start tests</div>
+        </td><td>6</td>
     </tr>
 </table>
 </body>

@@ -9,6 +9,8 @@ ThisBuild / scalaVersion := "2.12.15"
     val zio_config = "3.0.7"
     val z_http     = "2.0.0-RC11"
     val zio_json   = "0.3.0-RC11"
+    val pgVers     = "42.2.5"
+    val dbcp2Vers = "2.9.0"
   }
 
   // PROJECTS
@@ -42,10 +44,16 @@ ThisBuild / scalaVersion := "2.12.15"
       val zio_json = "dev.zio"       %% "zio-json"       % Versions.zio_json
 
       val zioDep = List(zio, zio_conf,zio_conf_typesafe,zio_conf_magnolia, z_http, zio_json )
+
+      val pg = "org.postgresql" % "postgresql" % Versions.pgVers
+      val dbcp2 = "org.apache.commons" % "commons-dbcp2" % Versions.dbcp2Vers
+
+      val dbDep = List(pg, dbcp2)
+
     }
 
   val commonDependencies = {
-    dependencies.zioDep
+    dependencies.zioDep ++ dependencies.dbDep
   }
 
   lazy val compilerOptions = Seq(

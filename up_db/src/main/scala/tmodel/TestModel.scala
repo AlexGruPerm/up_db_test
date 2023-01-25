@@ -50,7 +50,11 @@ sealed trait TestState
   case class TestsMeta(connect_ip: String,
                        db_name: String,
                        db_user: String,
-                       db_password: String)
+                       db_password: String) {
+     val driver = "org.postgresql.Driver"
+     def url: String =
+        s"jdbc:postgresql://$connect_ip/$db_name?user=$db_user&password=$db_password"
+  }
 
   case class Test(
                    id: Int,
@@ -62,7 +66,11 @@ sealed trait TestState
                    isEnabled: Boolean = true
                  )
 
-  case class TestModel(meta: TestsMeta, tests: Option[List[Test]])
+  case class TestModel(meta: TestsMeta, tests: Option[List[Test]]) {
+      val listID : List[Int] = tests.getOrElse(List[Test]()).map(t => t.id)
+      if (listID.distinct.size != listID.size)
+        throw new Exception("Not unique id in tests. Must be unique.")
+  }
 
   object EncDecTestModelImplicits{
 

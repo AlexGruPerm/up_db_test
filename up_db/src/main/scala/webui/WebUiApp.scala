@@ -61,7 +61,7 @@ object WebUiApp {
   import tmodel.EncDecRespTestModelImplicits._
   import data.TestsRepo
   //CharsetUtil.UTF_8
-  def loadTest(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
+  def loadTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
     for {
       tr <- ZIO.service[ImplTestsRepo]
 /*      bodyAsStr <- req.body.asString
@@ -93,6 +93,27 @@ object WebUiApp {
       }
     } yield resp
 
+  /**
+   * Start selected tests (array of id) from Tests set identified by sid.
+  */
+  def startTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
+    for {
+
+      bodyAsStr <- req.body.asString
+      _ <- ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~") *>
+        ZIO.logInfo(s"tests id array = $bodyAsStr") *>
+        ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+/*
+      u <- req.body.asString.map(_.fromJson[TestModel])
+        .catchAllDefect {
+          case e: Exception => ZIO.succeed(Left(e.getMessage))
+        }*/
+
+      resp <- ZIO.succeed(Response.text(s"OK"))
+
+    } yield resp
+
+
   /*ZIO.succeed(
     Response.json(RespTestModel(
       Session(sid),
@@ -102,8 +123,9 @@ object WebUiApp {
     Http.collectZIO[Request] {
       case Method.GET  -> !! / "greet" / name => getGreet(name)
       case Method.GET  -> !! / "main" => getMainPage
-      case req@(Method.POST -> !! / "load_test") => loadTest(req)
       case Method.GET  -> !! / "check" => checkTestsRepo
+      case req@(Method.POST -> !! / "load_test") => loadTests(req)
+      case req@(Method.POST -> !! / "start_test") => startTests(req)
     }
 
 }
