@@ -4,7 +4,7 @@ package webui
 import common.types.TestInRepo
 import data.{ImplTestsRepo, TestsRepo, checkTestRepoData}
 import error.InputJsonParsingError
-import tmodel.{RespTest, RespTestModel, Session, TestModel}
+import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsToRun}
 import zhttp.html.Html
 import zhttp.http._
 import zio.json.{DecoderOps, EncoderOps}
@@ -98,26 +98,20 @@ object WebUiApp {
   */
   def startTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
     for {
-
-      bodyAsStr <- req.body.asString
-      _ <- ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~") *>
-        ZIO.logInfo(s"tests id array = $bodyAsStr") *>
-        ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-/*
-      u <- req.body.asString.map(_.fromJson[TestModel])
+      u <- req.body.asString.map(_.fromJson[TestsToRun])
         .catchAllDefect {
           case e: Exception => ZIO.succeed(Left(e.getMessage))
-        }*/
-
-      resp <- ZIO.succeed(Response.text(s"OK"))
-
+        }
+      resp <- u match {
+        case Left(e) =>
+          ZIO.logError(s"Failed to parse the input: $e").as(
+            Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson).setStatus(Status.BadRequest)
+          )
+        case Right(testsToRun) =>
+          ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}") *>
+          ZIO.succeed(Response.json(InputJsonParsingError("OK start tests").toJson))
+      }
     } yield resp
-
-
-  /*ZIO.succeed(
-    Response.json(RespTestModel(
-      Session(sid),
-      Some(List(RespTest(1, "Test of cursor")).toJson))*/
 
   def apply(): Http[ImplTestsRepo, Throwable, Request, Response] =
     Http.collectZIO[Request] {

@@ -8,6 +8,7 @@
         var responseStatus;
         var responseText;
         var checkedTestId;
+        var checkedCommon;
         var checkedTestIdJson;
 
         function parse_response_populate_tests(tests_json){
@@ -75,14 +76,45 @@
                }
         }
 
-        function btnStartTests(){
+        async function startJsonTests() {
+             console.log('Send id of test to execting.');
+             console.log('-- request ----------------------------------------------');
+             console.log(checkedTestIdJson);
+             console.log('---------------------------------------------------------');
+               const response = await fetch(`start_test`, {
+                    method: "POST",
+                    headers: {
+                     'Accept': 'application/json',
+                     'Content-Type': 'application/json'
+                    },
+                    body: checkedTestIdJson
+                  });
+               responseStatus = response.status;
+                   if (responseStatus == 400) {
+                     console.log('-- error ----------------------------------------------');
+                     console.log('Response status = ',responseStatus);
+                     responseText = await response.text();
+                     console.log('Response text = ',responseText);
+                     console.log('---------------------------------------------------------');
+                     return response;
+                   } else {
+                     return response.json();
+                   }
+        }
+
+        async function btnStartTests(){
           console.log('-- start tests ---------------------------------------------');
           const tests_container = document.getElementById("test_list");
           checkedTestId = Array.from(tests_container.querySelectorAll("input[type=checkbox]:checked"))
             .map((elem) => parseInt(elem.id.replace("test_","")));
-          checkedTestIdJson = JSON.parse(JSON.stringify(checkedTestId));
-          console.log(checkedTestIdJson);
-          console.log('---------------------------------------------------------');
+          checkedCommon = "{\"sid\" : \"" + globalSessionId + "\" , \"ids\" : "+JSON.stringify(checkedTestId)+"}";
+          console.log("checkedCommon = ",checkedCommon);
+          checkedTestIdJson = JSON.parse(JSON.stringify(checkedCommon));
+          console.log("checkedTestIdJson = ",checkedTestIdJson);
+             const resultJson = await startJsonTests();
+             console.log('-- response ---------------------------------------------');
+             console.log(resultJson);
+             console.log('---------------------------------------------------------');
         }
 
     </script>

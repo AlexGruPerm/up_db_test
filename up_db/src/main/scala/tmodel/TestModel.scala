@@ -72,6 +72,8 @@ sealed trait TestState
         throw new Exception("Not unique id in tests. Must be unique.")
   }
 
+  case class TestsToRun(sid: String, ids: Option[List[Int]])
+
   object EncDecTestModelImplicits{
 
     implicit val encoderCallType: JsonEncoder[CallType] = DeriveJsonEncoder.gen[CallType]
@@ -110,4 +112,8 @@ sealed trait TestState
     implicit val encoderTestModel: JsonEncoder[TestModel] = DeriveJsonEncoder.gen[TestModel]
     implicit val decoderTestModel: JsonDecoder[TestModel] = DeriveJsonDecoder.gen[TestModel]
 
+    implicit val encoderTestsToRun: JsonEncoder[TestsToRun] = DeriveJsonEncoder.gen[TestsToRun]
+    implicit val decoderTestsToRun: JsonDecoder[TestsToRun] = DeriveJsonDecoder.gen[TestsToRun]
+
   }
+
