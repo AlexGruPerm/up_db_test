@@ -1,8 +1,8 @@
 package webui
 
 
-import common.types.TestInRepo
-import data.{ImplTestsRepo, TestsRepo, checkTestRepoData}
+import common.types.{SessionId, TestInRepo}
+import data.{ImplTestsRepo, TestsRepo, TestsStatus, checkTestRepoInfo}
 import error.InputJsonParsingError
 import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsToRun}
 import zhttp.html.Html
@@ -53,8 +53,12 @@ object WebUiApp {
     for {
       _ <- ZIO.logInfo("checkTestsRepo ")
       tr <- ZIO.service[ImplTestsRepo]
-      cnt <- tr.elementsCnt
-      resp <- ZIO.succeed(Response.json(checkTestRepoData(cnt).toJson))
+      info <- tr.checkTestRepoData
+      resp <- ZIO.succeed(info match {
+        case Some(i) => Response.json(i.toJson)
+        case _ => Response.json(InputJsonParsingError("OK start tests").toJson)
+      })
+
     } yield resp
 
   import tmodel.EncDecTestModelImplicits._

@@ -22,6 +22,21 @@ trait TestsRepo {
   */
   def testsList(sid: SessionId): UIO[Option[List[TestInRepo]]]
 
+  /**
+   * Aggregated information for debug purpose
+  */
+  def checkTestRepoData: UIO[Option[checkTestRepoInfo]]
+
+  /**
+   * Enable one test in the tests set identified by sid.
+  */
+  def enableTest(sid: SessionId, id: Int): UIO[Int]
+
+  /**
+   * Disable one test in the tests set identified by sid.
+   */
+  def disableTest(sid: SessionId, id: Int): UIO[Int]
+
 }
 
 case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extends TestsRepo {
@@ -41,6 +56,93 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
     test <- lookup(sid)
     tests = test.flatMap(tst => tst.tests)
   } yield tests
+
+  def checkTestRepoData: UIO[Option[checkTestRepoInfo]] = for {
+    lst <- ref.get.map { m => m.map {
+      case (k, v) =>
+        (k,
+          TestsStatus(
+            v.tests.getOrElse(List[TestInRepo]()).size,
+            v.tests.getOrElse(List[TestInRepo]()).count(t => t.isEnabled),
+            v.tests.getOrElse(List[TestInRepo]()).count(t => !t.isEnabled)))
+     }(collection.breakOut).toList
+    }
+   res <- ZIO.succeed(Some(checkTestRepoInfo(lst)))
+  } yield res
+
+  def enableTest(sid: SessionId, testId: Int): UIO[Int] = for {
+    test <- lookup(sid)
+    _ <- test match {
+      case Some(s) =>
+        ref.update{
+          tests => tests +
+            (sid -> TestModelRepo(
+              s.meta,
+            s.tests.map{
+              tr => tr.map{t =>
+                if (t.id == testId)
+                  t.copy(isEnabled = true)
+                else
+                  t
+              }
+            }
+          ))}
+      case None => ZIO.unit
+    }
+    res <- ZIO.succeed(testId)
+  } yield res
+
+  def disableTest(sid: SessionId, testId: Int): UIO[Int] = for {
+    test <- lookup(sid)
+    _ <- test match {
+      case Some(s) =>
+        ref.update{
+          tests => tests +
+            (sid -> TestModelRepo(
+              s.meta,
+              s.tests.map{
+                tr => tr.map{t =>
+                  if (t.id == testId)
+                    t.copy(isEnabled = false)
+                  else
+                    t
+                }
+              }
+            ))}
+      case None => ZIO.unit
+    }
+    res <- ZIO.succeed(testId)
+  } yield res
+
+
+
+    /*
+        updatedTestModelRepo = test.map{otmr =>
+      TestModelRepo(otmr,
+        otmr.tests.map{tests =>
+      tests.
+      collect{
+        case t if t.id == testId => t.copy(isEnabled = true)
+        case t if t.id != testId => t
+      })
+    */
+
+/*
+    updatedTests = test.flatMap(
+      testsList => testsList.tests.map{t =>
+        t.filter(testInRep => testInRep.id == id).map(foundedTest => (sid,foundedTest.copy(isEnabled = true)))
+        })
+  */
+
+  /*
+        .map{testsInRepo => testsInRepo.tests.getOrElse(List[TestInRepo]()).
+        .map{
+          t => if (t.id == testId)
+            (sid -> (testsInRepo.meta,t.copy(isEnabled = true)))
+          else (sid -> (testsInRepo.meta,t))
+        }
+      }
+  */
 
 }
 
