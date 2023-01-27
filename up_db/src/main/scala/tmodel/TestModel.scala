@@ -19,6 +19,7 @@ import scala.annotation.nowarn
 sealed trait CallType
   case object procedure extends CallType
   case object function extends CallType
+  case object select_function extends CallType
 
 sealed trait RetType
   case object cursor extends RetType
@@ -80,6 +81,7 @@ sealed trait TestState
     implicit val decoder: JsonDecoder[CallType] = JsonDecoder[String].map {
       case "procedure" => procedure
       case "function" => function
+      case "select_function" => select_function
       case anyValue => throw new Exception(s"Invalid value in field call_type = $anyValue")
     }
 

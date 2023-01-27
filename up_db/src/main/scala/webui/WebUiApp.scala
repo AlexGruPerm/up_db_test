@@ -102,23 +102,23 @@ object WebUiApp {
   */
   def startTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
     for {
+      //tr <- ZIO.service[ImplTestsRepo]
       u <- req.body.asString.map(_.fromJson[TestsToRun])
         .catchAllDefect {
           case e: Exception => ZIO.succeed(Left(e.getMessage))
         }
       resp <- u match {
         case Left(e) =>
-          ZIO.logError(s"Failed to parse the input: $e").as(
-            Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson).setStatus(Status.BadRequest)
-          )
+          ZIO.logError(s"Failed to parse the input: $e") *>
+            ZIO.succeed(Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson)
+              .setStatus(Status.BadRequest))
         case Right(testsToRun) =>
           ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}") *>
-          //todo: Here we need create and fork effect (PgLayer,Throwable,Unit. add .catchAllDefect) that will execute tests and save results back into ref.
-          // depends on ref and SID + List(id) as input parameters.
-          // return ().
           ZIO.succeed(Response.json(InputJsonParsingError("OK start tests").toJson))
       }
+
     } yield resp
+
 
   def apply(): Http[ImplTestsRepo, Throwable, Request, Response] =
     Http.collectZIO[Request] {
