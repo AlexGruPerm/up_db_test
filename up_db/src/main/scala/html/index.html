@@ -17,7 +17,7 @@
           const tests_container = document.getElementById("test_list");
             for (test of tests_json.tests) {
                 //console.log(test);
-                tests_container.innerHTML += `<input type="checkbox" id="test_${test.id}" name="test_${test.id}" checked=true><label for="test_${test.id}" class="test_undefined">${test.name}</label><br/>`;
+                tests_container.innerHTML += `<input type="checkbox" id="test_${test.id}" name="test_${test.id}" ><label for="test_${test.id}" class="test_undefined">${test.name}</label><br/>`;
             }
         }
 

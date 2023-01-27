@@ -1,6 +1,6 @@
 package common
 
-import tmodel.{CallType, RetType, SucCondElement, Test, TestModel, TestState, TestsMeta, undefined}
+import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, undefined}
 
 object types {
   type SessionId = String
@@ -25,6 +25,6 @@ object types {
       }}
       TestModelRepo(tm.meta, testsInRepo)
     }
-  }//getOrElse(List[Test]())
+  }
 
 }

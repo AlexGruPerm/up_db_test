@@ -37,6 +37,11 @@ trait TestsRepo {
    */
   def disableTest(sid: SessionId, id: Int): UIO[Unit]
 
+  /**
+   * Disable all tests in the tests set identified by sid.
+   */
+  def disableAllTest(sid: SessionId): UIO[Unit]
+
 }
 
 case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extends TestsRepo {
@@ -89,7 +94,6 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
           ))}
       case None => ZIO.unit
     }
-    //res <- ZIO.succeed(testId)
   } yield ()
 
   def disableTest(sid: SessionId, testId: Int): UIO[Unit] = for {
@@ -111,38 +115,24 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
             ))}
       case None => ZIO.unit
     }
-    //res <- ZIO.succeed(testId)
   } yield ()
 
-
-
-    /*
-        updatedTestModelRepo = test.map{otmr =>
-      TestModelRepo(otmr,
-        otmr.tests.map{tests =>
-      tests.
-      collect{
-        case t if t.id == testId => t.copy(isEnabled = true)
-        case t if t.id != testId => t
-      })
-    */
-
-/*
-    updatedTests = test.flatMap(
-      testsList => testsList.tests.map{t =>
-        t.filter(testInRep => testInRep.id == id).map(foundedTest => (sid,foundedTest.copy(isEnabled = true)))
-        })
-  */
-
-  /*
-        .map{testsInRepo => testsInRepo.tests.getOrElse(List[TestInRepo]()).
-        .map{
-          t => if (t.id == testId)
-            (sid -> (testsInRepo.meta,t.copy(isEnabled = true)))
-          else (sid -> (testsInRepo.meta,t))
-        }
-      }
-  */
+  def disableAllTest(sid: SessionId): UIO[Unit] = for {
+    test <- lookup(sid)
+    _ <- test match {
+      case Some(s) =>
+        ref.update{
+          tests => tests +
+            (sid -> TestModelRepo(
+              s.meta,
+              s.tests.map{
+                tr => tr.map{t =>t.copy(isEnabled = false)
+                }
+              }
+            ))}
+      case None => ZIO.unit
+    }
+  } yield ()
 
 }
 

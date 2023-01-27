@@ -64,7 +64,7 @@ sealed trait TestState
                    ret_type: RetType,
                    call: String,
                    success_condition: Option[List[SucCondElement]],
-                   isEnabled: Boolean = true
+                   isEnabled: Boolean = false
                  )
 
   case class TestModel(meta: TestsMeta, tests: Option[List[Test]]) {

@@ -8,7 +8,7 @@ import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsToRun}
 import zhttp.html.Html
 import zhttp.http._
 import zio.json.{DecoderOps, EncoderOps}
-import zio.{Scope, ZIO}
+import zio.{Scope, UIO, ZIO}
 
 import java.io.IOException
 import scala.io._
@@ -102,7 +102,7 @@ object WebUiApp {
   */
   def startTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
     for {
-      //tr <- ZIO.service[ImplTestsRepo]
+      tr <- ZIO.service[ImplTestsRepo]
       u <- req.body.asString.map(_.fromJson[TestsToRun])
         .catchAllDefect {
           case e: Exception => ZIO.succeed(Left(e.getMessage))
@@ -114,6 +114,11 @@ object WebUiApp {
               .setStatus(Status.BadRequest))
         case Right(testsToRun) =>
           ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}") *>
+            ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}").when(testsToRun.ids.getOrElse(List[Int]()).isEmpty) *>
+            tr.disableAllTest(testsToRun.sid).when(testsToRun.ids.getOrElse(List[Int]()).isEmpty) *>
+            ZIO.foreachDiscard(testsToRun.ids.getOrElse(List[Int]())){
+              testId => tr.enableTest(testsToRun.sid,testId)
+            } *>
           ZIO.succeed(Response.json(InputJsonParsingError("OK start tests").toJson))
       }
 
