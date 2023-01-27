@@ -4,7 +4,7 @@ import common.types.{SessionId, TestInRepo, TestModelRepo}
 import tmodel.TestModel
 
 import scala.collection.mutable
-import zio._
+import zio.{UIO, _}
 
 trait TestsRepo {
   /**
@@ -30,12 +30,12 @@ trait TestsRepo {
   /**
    * Enable one test in the tests set identified by sid.
   */
-  def enableTest(sid: SessionId, id: Int): UIO[Int]
+  def enableTest(sid: SessionId, id: Int):  UIO[Unit]
 
   /**
    * Disable one test in the tests set identified by sid.
    */
-  def disableTest(sid: SessionId, id: Int): UIO[Int]
+  def disableTest(sid: SessionId, id: Int): UIO[Unit]
 
 }
 
@@ -70,7 +70,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
    res <- ZIO.succeed(Some(checkTestRepoInfo(lst)))
   } yield res
 
-  def enableTest(sid: SessionId, testId: Int): UIO[Int] = for {
+  def enableTest(sid: SessionId, testId: Int): UIO[Unit] = for {
     test <- lookup(sid)
     _ <- test match {
       case Some(s) =>
@@ -89,10 +89,10 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
           ))}
       case None => ZIO.unit
     }
-    res <- ZIO.succeed(testId)
-  } yield res
+    //res <- ZIO.succeed(testId)
+  } yield ()
 
-  def disableTest(sid: SessionId, testId: Int): UIO[Int] = for {
+  def disableTest(sid: SessionId, testId: Int): UIO[Unit] = for {
     test <- lookup(sid)
     _ <- test match {
       case Some(s) =>
@@ -111,8 +111,8 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
             ))}
       case None => ZIO.unit
     }
-    res <- ZIO.succeed(testId)
-  } yield res
+    //res <- ZIO.succeed(testId)
+  } yield ()
 
 
 

@@ -117,7 +117,8 @@ object WebUiApp {
           ZIO.succeed(Response.json(InputJsonParsingError("OK start tests").toJson))
       }
 
-    } yield resp
+      response <- ZIO.succeed(resp)
+    } yield response
 
 
   def apply(): Http[ImplTestsRepo, Throwable, Request, Response] =
