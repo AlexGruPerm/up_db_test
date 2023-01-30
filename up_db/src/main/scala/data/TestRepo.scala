@@ -42,6 +42,8 @@ trait TestsRepo {
    */
   def disableAllTest(sid: SessionId): UIO[Unit]
 
+  def testsListEnabled(sid: SessionId): UIO[Option[List[TestInRepo]]]
+
 }
 
 case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extends TestsRepo {
@@ -60,6 +62,11 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
   def testsList(sid: SessionId): UIO[Option[List[TestInRepo]]] = for {
     test <- lookup(sid)
     tests = test.flatMap(tst => tst.tests)
+  } yield tests
+
+  def testsListEnabled(sid: SessionId): UIO[Option[List[TestInRepo]]] = for {
+    test <- lookup(sid)
+    tests = test.flatMap(olt => olt.tests.map(t => t.filter(_.isEnabled==true)))
   } yield tests
 
   def checkTestRepoData: UIO[Option[checkTestRepoInfo]] = for {

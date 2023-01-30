@@ -4,7 +4,8 @@ package webui
 import common.types.{SessionId, TestInRepo}
 import data.{ImplTestsRepo, TestsRepo, TestsStatus, checkTestRepoInfo}
 import db.jdbcSessionImpl
-import error.InputJsonParsingError
+import error.ResponseMessage
+import runner.TestRunnerImpl
 import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsMeta, TestsToRun}
 import zhttp.html.Html
 import zhttp.http._
@@ -57,7 +58,7 @@ object WebUiApp {
       info <- tr.checkTestRepoData
       resp <- ZIO.succeed(info match {
         case Some(i) => Response.json(i.toJson)
-        case _ => Response.json(InputJsonParsingError("OK start tests").toJson)
+        case _ => Response.json(ResponseMessage("OK start tests").toJson)
       })
 
     } yield resp
@@ -80,7 +81,7 @@ object WebUiApp {
       }
 
       resp <- u match {
-        case Left(exp_str) => ZIO.succeed(Response.json(InputJsonParsingError(exp_str).toJson).setStatus(Status.BadRequest))
+        case Left(exp_str) => ZIO.succeed(Response.json(ResponseMessage(exp_str).toJson).setStatus(Status.BadRequest))
         case Right(testsWithMeta) =>
           tr.create(testsWithMeta).flatMap{sid =>
             ZIO.logInfo(s"SID = $sid") *>
@@ -108,11 +109,8 @@ object WebUiApp {
     }
     testsSet <- tr.lookup(testsToRun.sid)
     testMeta = ZLayer.succeed(testsSet.get.meta)
-    testRunner <- jdbcSessionImpl.get.provide(testMeta)
-    jdbc <- testRunner.pgConnection
-    maxCnt <- testRunner.getMaxConnections(jdbc)
-    conn = jdbc.sess
-    _ <- ZIO.logInfo(s"running tests.... sid=${testsToRun.sid} isOpened = ${!conn.isClosed} maxConnection= ${maxCnt}")
+    testRunner <- TestRunnerImpl.get
+    _ <- testRunner.run(testsToRun.sid)
   } yield ()
 
   /**
@@ -126,14 +124,14 @@ object WebUiApp {
         }
       resp <- u match {
         case Left(exp_str) =>
-            ZIO.succeed(Response.json(InputJsonParsingError(exp_str).toJson).setStatus(Status.BadRequest))
+            ZIO.succeed(Response.json(ResponseMessage(exp_str).toJson).setStatus(Status.BadRequest))
         case Right(testsToRun) =>
           startTestsLogic(testsToRun).catchAllDefect{
             case e: Exception =>
               ZIO.logError(s"Debug ${e.getMessage} - ${e.getClass.getName} ") *> ZIO.fail(e)
           }.foldZIO(
-            err => ZIO.succeed(Response.json(InputJsonParsingError(err.getMessage).toJson).setStatus(Status.BadRequest)),
-            _ => ZIO.succeed(Response.json(InputJsonParsingError("OK start tests 4").toJson))
+            err => ZIO.succeed(Response.json(ResponseMessage(err.getMessage).toJson).setStatus(Status.BadRequest)),
+            _ => ZIO.succeed(Response.json(ResponseMessage("OK").toJson))
           )
       }
     } yield resp

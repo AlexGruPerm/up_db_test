@@ -11,6 +11,7 @@
         var checkedCommon;
         var checkedTestIdJson;
 
+
         function parse_response_populate_tests(tests_json){
           globalSessionId = tests_json.session.id;
           console.log("SessionId : ",globalSessionId);
@@ -66,7 +67,9 @@
              console.log(resultJson);
              console.log('---------------------------------------------------------');
              const resp_message = document.getElementById("resp_message");
+             const tests_container = document.getElementById("test_list");
                if (responseStatus == 400) {
+                 tests_container.innerHTML = "";
                  resp_message.className = 'error_msg';
                  resp_message.innerHTML = `ERROR:<br/> ${JSON.parse(responseText).message}`;
                } else {
@@ -90,6 +93,7 @@
                     body: checkedTestIdJson
                   });
                const resp_message = document.getElementById("resp_message");
+               const tests_container = document.getElementById("test_list");
                responseStatus = response.status;
                    if (responseStatus == 400) {
                      console.log('-- error ----------------------------------------------');
