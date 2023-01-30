@@ -3,12 +3,13 @@ package webui
 
 import common.types.{SessionId, TestInRepo}
 import data.{ImplTestsRepo, TestsRepo, TestsStatus, checkTestRepoInfo}
+import db.jdbcSessionImpl
 import error.InputJsonParsingError
-import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsToRun}
+import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsMeta, TestsToRun}
 import zhttp.html.Html
 import zhttp.http._
 import zio.json.{DecoderOps, EncoderOps}
-import zio.{Scope, UIO, ZIO}
+import zio.{Scope, UIO, ZIO, ZLayer}
 
 import java.io.IOException
 import scala.io._
@@ -97,12 +98,30 @@ object WebUiApp {
       }
     } yield resp
 
+  private def startTestsLogic(testsToRun: TestsToRun): ZIO[ImplTestsRepo, Throwable, Unit] = for {
+    tr <- ZIO.service[ImplTestsRepo]
+    _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
+    _ <- ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}").when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
+    _ <- tr.disableAllTest(testsToRun.sid).when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
+    _ <- ZIO.foreachDiscard(testsToRun.ids.getOrElse(List[Int]())) {
+      testId => tr.enableTest(testsToRun.sid, testId)
+    }
+    testsSet <- tr.lookup(testsToRun.sid)
+    testMeta = ZLayer.succeed(testsSet.get.meta)
+    _ <- ZIO.logInfo(s"DEBUG 1")
+    testRunner <- jdbcSessionImpl.layer.provide(testMeta)
+    jdbc <- testRunner.pgConnection
+    maxCnt <- testRunner.getMaxConnections(jdbc)
+    conn = jdbc.sess
+    _ <- ZIO.logInfo(s"running tests.... sid=${testsToRun.sid} isOpened = ${!conn.isClosed} maxConnection= ${maxCnt}")
+  } yield ()
+
   /**
    * Start selected tests (array of id) from Tests set identified by sid.
   */
   def startTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
     for {
-      tr <- ZIO.service[ImplTestsRepo]
+
       u <- req.body.asString.map(_.fromJson[TestsToRun])
         .catchAllDefect {
           case e: Exception => ZIO.succeed(Left(e.getMessage))
@@ -113,12 +132,7 @@ object WebUiApp {
             ZIO.succeed(Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson)
               .setStatus(Status.BadRequest))
         case Right(testsToRun) =>
-          ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}") *>
-            ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}").when(testsToRun.ids.getOrElse(List[Int]()).isEmpty) *>
-            tr.disableAllTest(testsToRun.sid).when(testsToRun.ids.getOrElse(List[Int]()).isEmpty) *>
-            ZIO.foreachDiscard(testsToRun.ids.getOrElse(List[Int]())){
-              testId => tr.enableTest(testsToRun.sid,testId)
-            } *>
+          startTestsLogic(testsToRun) *>
           ZIO.succeed(Response.json(InputJsonParsingError("OK start tests").toJson))
       }
 
