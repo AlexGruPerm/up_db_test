@@ -80,10 +80,7 @@ object WebUiApp {
       }
 
       resp <- u match {
-        case Left(e) =>
-          ZIO.logError(s"Failed to parse the input: $e").as(
-            Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson).setStatus(Status.BadRequest)
-          )
+        case Left(exp_str) => ZIO.succeed(Response.json(InputJsonParsingError(exp_str).toJson).setStatus(Status.BadRequest))
         case Right(testsWithMeta) =>
           tr.create(testsWithMeta).flatMap{sid =>
             ZIO.logInfo(s"SID = $sid") *>
@@ -98,6 +95,9 @@ object WebUiApp {
       }
     } yield resp
 
+  /**
+   * todo: in JS move const tests_container = document.getElementById("test_list"); and for containers in global area
+  */
   private def startTestsLogic(testsToRun: TestsToRun): ZIO[ImplTestsRepo, Throwable, Unit] = for {
     tr <- ZIO.service[ImplTestsRepo]
     _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
@@ -108,8 +108,7 @@ object WebUiApp {
     }
     testsSet <- tr.lookup(testsToRun.sid)
     testMeta = ZLayer.succeed(testsSet.get.meta)
-    _ <- ZIO.logInfo(s"DEBUG 1")
-    testRunner <- jdbcSessionImpl.layer.provide(testMeta)
+    testRunner <- jdbcSessionImpl.get.provide(testMeta)
     jdbc <- testRunner.pgConnection
     maxCnt <- testRunner.getMaxConnections(jdbc)
     conn = jdbc.sess
@@ -121,23 +120,23 @@ object WebUiApp {
   */
   def startTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
     for {
-
       u <- req.body.asString.map(_.fromJson[TestsToRun])
         .catchAllDefect {
           case e: Exception => ZIO.succeed(Left(e.getMessage))
         }
       resp <- u match {
-        case Left(e) =>
-          ZIO.logError(s"Failed to parse the input: $e") *>
-            ZIO.succeed(Response.json(InputJsonParsingError(s"Failed to parse the input: $e").toJson)
-              .setStatus(Status.BadRequest))
+        case Left(exp_str) =>
+            ZIO.succeed(Response.json(InputJsonParsingError(exp_str).toJson).setStatus(Status.BadRequest))
         case Right(testsToRun) =>
-          startTestsLogic(testsToRun) *>
-          ZIO.succeed(Response.json(InputJsonParsingError("OK start tests").toJson))
+          startTestsLogic(testsToRun).catchAllDefect{
+            case e: Exception =>
+              ZIO.logError(s"Debug ${e.getMessage} - ${e.getClass.getName} ") *> ZIO.fail(e)
+          }.foldZIO(
+            err => ZIO.succeed(Response.json(InputJsonParsingError(err.getMessage).toJson).setStatus(Status.BadRequest)),
+            _ => ZIO.succeed(Response.json(InputJsonParsingError("OK start tests 4").toJson))
+          )
       }
-
-      response <- ZIO.succeed(resp)
-    } yield response
+    } yield resp
 
 
   def apply(): Http[ImplTestsRepo, Throwable, Request, Response] =

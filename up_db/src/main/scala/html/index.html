@@ -15,8 +15,8 @@
           globalSessionId = tests_json.session.id;
           console.log("SessionId : ",globalSessionId);
           const tests_container = document.getElementById("test_list");
+          tests_container.innerHTML = "";
             for (test of tests_json.tests) {
-                //console.log(test);
                 tests_container.innerHTML += `<input type="checkbox" id="test_${test.id}" name="test_${test.id}" ><label for="test_${test.id}" class="test_undefined">${test.name}</label><br/>`;
             }
         }
@@ -65,13 +65,13 @@
              console.log('-- response ---------------------------------------------');
              console.log(resultJson);
              console.log('---------------------------------------------------------');
-             const tests_container = document.getElementById("test_list");
+             const resp_message = document.getElementById("resp_message");
                if (responseStatus == 400) {
-                 tests_container.className = 'error_msg';
-                 tests_container.innerHTML = `ERROR:<br/> ${JSON.parse(responseText).message}`;
+                 resp_message.className = 'error_msg';
+                 resp_message.innerHTML = `ERROR:<br/> ${JSON.parse(responseText).message}`;
                } else {
-                 tests_container.classList.remove('error_msg');
-                 tests_container.innerHTML = "";
+                 resp_message.classList.remove('error_msg');
+                 resp_message.innerHTML = "";
                  parse_response_populate_tests(resultJson);
                }
         }
@@ -89,15 +89,20 @@
                     },
                     body: checkedTestIdJson
                   });
+               const resp_message = document.getElementById("resp_message");
                responseStatus = response.status;
                    if (responseStatus == 400) {
                      console.log('-- error ----------------------------------------------');
                      console.log('Response status = ',responseStatus);
                      responseText = await response.text();
                      console.log('Response text = ',responseText);
+                     resp_message.className = 'error_msg';
+                     resp_message.innerHTML = `ERROR:<br/> ${JSON.parse(responseText).message}`;
                      console.log('---------------------------------------------------------');
                      return response;
                    } else {
+                     resp_message.classList.remove('error_msg');
+                     resp_message.innerHTML = "";
                      return response.json();
                    }
         }
@@ -154,6 +159,8 @@ body {
             <input id="fileupload" type="file" accept=".json" name="fileupload" />
             <br><br>
             <div id="btn_upload_test_file" onclick="btnUploadTestFile()"  class="label">send json file</div>
+            <br><br>
+            <div id="resp_message"></div>
         </td><td>2</td>
     </tr>
     <tr>

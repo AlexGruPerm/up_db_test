@@ -53,8 +53,9 @@ sealed trait TestState
                        db_user: String,
                        db_password: String) {
      val driver = "org.postgresql.Driver"
-     def url: String =
-        s"jdbc:postgresql://$connect_ip/$db_name?user=$db_user&password=$db_password"
+     def url: String =  s"jdbc:postgresql://$connect_ip/$db_name?user=$db_user&password=$db_password"
+     def urlMsg: String =  s"jdbc:postgresql://$connect_ip/$db_name?user=*****&password=*****"
+
   }
 
   case class Test(
