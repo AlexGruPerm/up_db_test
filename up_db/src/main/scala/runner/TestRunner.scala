@@ -25,7 +25,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo) extends TestRunner {
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall = ZIO.attemptBlocking{
-      try {
+      //try {
         val tBegin = System.currentTimeMillis
         connection.commit() //todo: remove it !?
         connection.setAutoCommit(false) //todo: remove it !?
@@ -39,6 +39,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo) extends TestRunner {
         val pgrs = v.asInstanceOf[PgResultSet]
         val columns: IndexedSeq[(String, String)] = (1 to pgrs.getMetaData.getColumnCount)
           .map(cnum => (pgrs.getMetaData.getColumnName(cnum), pgrs.getMetaData.getColumnTypeName(cnum)))
+        //todo: in takeWhile we can use condionas from test, rows_eq, rows_gt, rows_lt
         val results: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map {
           rs => columns.map(cname => rs.getString(cname._1))
         }
@@ -49,11 +50,11 @@ case class TestRunnerImpl(tr: ImplTestsRepo) extends TestRunner {
         rs.close()
         stmt.close()
         res
-        }
+/*        }
       catch {
     case e: Exception =>
     throw new Exception(e.getMessage)
-  }
+  }*/
   }.catchAll {
     case e: Exception => ZIO.logError(s" Exception exec_select_function_cursor msg=${e.getMessage} don't fail").as(Unit) //*> //todo: maybe remove here
           //todo: if we onpen it here anr run nultiple test and if one test fail, execution will stoped and error text send to client correctly.
