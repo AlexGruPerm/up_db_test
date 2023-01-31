@@ -126,6 +126,20 @@
              console.log('---------------------------------------------------------');
         }
 
+        function btnSelectAll(){
+           console.log('select all tests');
+           const tests_container = document.getElementById("test_list");
+           Array.from(tests_container.querySelectorAll("input[type=checkbox]"))
+             .map((elem) => elem.checked = true)
+        }
+
+        function btnUnelectAll(){
+          console.log('unselect all tests');
+          const tests_container = document.getElementById("test_list");
+          Array.from(tests_container.querySelectorAll("input[type=checkbox]"))
+             .map((elem) => elem.checked = false)
+        }
+
     </script>
     <style type="text/css">
 <!--
@@ -145,6 +159,25 @@ body {
     border: 1px solid #333;
     color: #333;
 }
+
+.sel-button-container {
+    border: 3px solid #fff;
+    padding: 20px;
+}
+
+.select_label {
+    width: 120px;
+    height: 35px;
+    border-radius: 3px;
+    text-align: center;
+    cursor: pointer;
+    display: block;
+    font: 14px/50px Tahoma;
+    border: 1px solid #333;
+    color: #333;
+    float: left;
+}
+
 .test_container { border:1px solid #ccc; width:100%; height: 200px; overflow-y: scroll; top: 0;  left: 0;}
 
 .test_undefined{color: black;}
@@ -163,7 +196,10 @@ body {
             <input id="fileupload" type="file" accept=".json" name="fileupload" />
             <br><br>
             <div id="btn_upload_test_file" onclick="btnUploadTestFile()"  class="label">send json file</div>
-            <br><br>
+                <div class="sel-button-container">
+                    <div id="btn_select_all" onclick="btnSelectAll()" class="select_label">Select all</div>
+                    <div id="btn_unselect_all" onclick="btnUnelectAll()" class="select_label">Unselect all</div>
+                </div><br>
             <div id="resp_message"></div>
         </td><td>2</td>
     </tr>

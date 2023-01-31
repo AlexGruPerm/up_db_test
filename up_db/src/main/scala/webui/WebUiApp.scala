@@ -89,7 +89,7 @@ object WebUiApp {
                 optTests =>
                     Response.json(RespTestModel(
                       Session(sid),
-                      optTests.map{trp => trp.map{t => RespTest(t.id, t.name)}}
+                      optTests.map{trp => trp.map{t => RespTest(t.id, s"[${t.id}] ${t.name}")}}
                     ).toJson)
               }
          }
@@ -103,7 +103,7 @@ object WebUiApp {
     tr <- ZIO.service[ImplTestsRepo]
     _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
     _ <- ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}").when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
-    _ <- tr.disableAllTest(testsToRun.sid).when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
+    _ <- tr.disableAllTest(testsToRun.sid)//.when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
     _ <- ZIO.foreachDiscard(testsToRun.ids.getOrElse(List[Int]())) {
       testId => tr.enableTest(testsToRun.sid, testId)
     }

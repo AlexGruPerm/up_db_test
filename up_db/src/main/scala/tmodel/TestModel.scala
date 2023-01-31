@@ -28,7 +28,7 @@ sealed trait RetType
 
 sealed trait SucCond
   case object rows_gt extends SucCond
-  //case object rows_eq extends SucCond("rows_eq")
+  case object rows_eq extends SucCond
   case object exec_time_ms  extends SucCond
   case object fetch_time_ms extends SucCond
   case object full_time_ms  extends SucCond
@@ -96,6 +96,7 @@ sealed trait TestState
 
     implicit val encoderSucCond: JsonEncoder[SucCond] = DeriveJsonEncoder.gen[SucCond]
     implicit val decoderSucCond: JsonDecoder[SucCond] = JsonDecoder[String].map {
+      case "rows_eq" => rows_eq
       case "rows_gt" => rows_gt
       case "exec_time_ms" => exec_time_ms
       case "fetch_time_ms" => fetch_time_ms
