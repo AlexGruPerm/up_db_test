@@ -5,6 +5,11 @@ import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMet
 object types {
   type SessionId = String
 
+  /**
+   * success_condition - List of SucCondElement contains execution results in fields:
+   * execResultValue: Option[Int]     For example, for "condition":"rows_eq",      "checkValue":12  execResultValue=Some(x)
+   * conditionResult: Option[Boolean] is this condition successful.
+  */
   case class TestInRepo(
                    id: Int,
                    name: String,
