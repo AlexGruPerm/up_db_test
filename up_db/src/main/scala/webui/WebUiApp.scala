@@ -103,14 +103,14 @@ object WebUiApp {
     tr <- ZIO.service[ImplTestsRepo]
     _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
     _ <- ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}").when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
-    _ <- tr.disableAllTest(testsToRun.sid)//.when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
+    _ <- tr.disableAllTestAndClearExecRes(testsToRun.sid)//.when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
     _ <- ZIO.foreachDiscard(testsToRun.ids.getOrElse(List[Int]())) {
       testId => tr.enableTest(testsToRun.sid, testId)
     }
     testsSet <- tr.lookup(testsToRun.sid)
     testMeta = ZLayer.succeed(testsSet.get.meta)
-    testRunner <- TestRunnerImpl.get
-    _ <- testRunner.run(testsToRun.sid)
+    testRunner <- TestRunnerImpl.get.provideSome(ZLayer.succeed(testsToRun.sid),ZLayer.succeed(tr))
+    _ <- testRunner.run()
   } yield ()
 
   /**

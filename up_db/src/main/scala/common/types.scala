@@ -18,7 +18,9 @@ object types {
                    call: String,
                    success_condition: Option[List[SucCondElement]],
                    isEnabled: Boolean,
-                   testState: TestState = undefined
+                   testState: TestState = undefined,
+                   isExecuted: Boolean = false,
+                   testRes: TestExecutionResult
                  )
 
   case class TestModelRepo( meta: TestsMeta, tests: Option[List[TestInRepo]])
@@ -26,12 +28,21 @@ object types {
   object TestModelRepo {
     def apply(tm: TestModel) : TestModelRepo = {
       val testsInRepo: Option[List[TestInRepo]] = tm.tests.map{tst => tst.map{t =>
-        TestInRepo(t.id, t.name, t.call_type, t.ret_type, t.call, t.success_condition, t.isEnabled, undefined )
+        TestInRepo(t.id, t.name, t.call_type, t.ret_type, t.call, t.success_condition, t.isEnabled, undefined , isExecuted= false,
+          testRes = TestExecutionResult(0L, 0L, 0L, List[(String, String)](), 0))
       }}
       TestModelRepo(tm.meta, testsInRepo)
     }
   }
 
-  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int)
+  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int, errMsg: Option[String] = None)
+
+  object TestExecutionResult {
+    def apply(): TestExecutionResult =
+      TestExecutionResult(0L, 0L, 0L, List[(String, String)](), 0)
+
+    def apply(errMsg: String): TestExecutionResult =
+      TestExecutionResult(0L, 0L, 0L, List[(String, String)](), 0,errMsg = Some(errMsg))
+  }
 
 }

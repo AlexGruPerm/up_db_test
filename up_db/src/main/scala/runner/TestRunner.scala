@@ -11,7 +11,7 @@ import java.sql.{ResultSet, SQLException}
 import scala.reflect.internal.ClassfileConstants.instanceof
 
 trait TestRunner {
-  def run(sid: SessionId): ZIO[ImplTestsRepo, Throwable, Unit]
+  def run(): ZIO[Any, Throwable, Unit]
 }
 
 /**
@@ -19,13 +19,14 @@ trait TestRunner {
  * https://jdbc.postgresql.org/documentation/callproc/
  * https://postgrespro.com/list/thread-id/1920893
 */
-case class TestRunnerImpl(tr: ImplTestsRepo) extends TestRunner {
+case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner {
 
-  private def updateTestWithResult(test: TestInRepo/*, testRes: TestExecutionResult*/): ZIO[Any, Nothing, TestInRepo] =
-    ZIO.succeed(test)
+  private def updateTestWithResult(test: TestInRepo): ZIO[Any, Throwable, Unit] = for {
+    _ <- tr.updateTestWithResults(sid, test)
+  } yield ()
 
   import java.sql.Types
-  private def exec_select_function_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Nothing, TestInRepo] = for {
+  private def exec_select_function_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Throwable, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: ZIO[Any,Nothing,TestExecutionResult] = ZIO.attemptBlocking {
@@ -38,7 +39,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo) extends TestRunner {
       val res: TestExecutionResult = {
         if (!rs.next())
         //throw new SQLException("! there were no rows.")
-          TestExecutionResult(0L, 0L, tExec - tBegin, List[(String, String)](), 0)
+          TestExecutionResult()//0L, 0L, tExec - tBegin, List[(String, String)](), 0)
 
         val v = rs.getObject(1);
         val pgrs = v.asInstanceOf[PgResultSet]
@@ -57,49 +58,45 @@ case class TestRunnerImpl(tr: ImplTestsRepo) extends TestRunner {
         println(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         results.foreach(println)
         println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")*/
-
         TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, columns.toList, rowsCnt)
       }
       stmt.close()
       res
   }.catchAll {
     case e: Exception => ZIO.logError(s" Exception exec_select_function_cursor msg=${e.getMessage} don't fail")
-      .as(/*Unit*/TestExecutionResult(0L, 0L, 0L, List[(String, String)](), 0)) //*> //todo: maybe remove here
+      .as(TestExecutionResult(e.getMessage)) //*> //todo: maybe remove here
           //todo: if we onpen it here anr run nultiple test and if one test fail, execution will stoped and error text send to client correctly.
           //todo: use it for whole tests set execution
       //ZIO.fail(throw new Exception(s"Exception for test.id = [${test.id}] with message ${e.getMessage}"))
   }
     testResult <- execDbCall
     _ <- ZIO.logInfo(s"test res = ${testResult}")
-    updatedTest <- updateTestWithResult(test/*,testResult*/)
-  } yield updatedTest
+    _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult)/*test.copy(isExecuted = true, testRes = testResult)*/)
+  } yield ()
 
 
-  private def exec(sid: SessionId, meta: TestsMeta, test: TestInRepo): ZIO[ImplTestsRepo, Throwable, Unit] = for {
-    /*tr <- ZIO.service[ImplTestsRepo]
-    tests <- tr.lookup(sid)*/
+  private def exec(meta: TestsMeta, test: TestInRepo): ZIO[Any, Throwable, Unit] = for {
     jdbc <- jdbcSessionImpl.get.provide(ZLayer.succeed(meta))
     conn <- jdbc.pgConnection
     _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] ${meta.urlMsg} isOpened Connection = ${!conn.sess.isClosed}")
     _ <- test.call_type match {
       case _: select_function.type =>
         test.ret_type match {
-          case _: cursor.type => exec_select_function_cursor(conn,test)//.map{t => t.}
+          case _: cursor.type => exec_select_function_cursor(conn,test)
           case _ => ZIO.unit
         }
       case _ => ZIO.unit
     }
   } yield ()
 
-  def run(sid: SessionId): ZIO[ImplTestsRepo, Throwable, Unit] = for {
-      tr <- ZIO.service[ImplTestsRepo]
+  def run: ZIO[Any, Throwable, Unit] = for {
       testsSetOpt <- tr.lookup(sid)
       _ <- testsSetOpt match {
         case Some(testsSet) =>
           ZIO.logInfo(s" Begin tests set execution for SID = $sid") *>
           ZIO.foreachDiscard(testsSet.tests.getOrElse(List[TestInRepo]()).filter(_.isEnabled == true)) {
             testId: TestInRepo =>
-              exec(sid, testsSet.meta, testId)
+              exec(testsSet.meta, testId)
           }//Here we can use catchAllDefect for catch errors for all tests in set.
         case None => ZIO.unit
       }
@@ -107,9 +104,10 @@ case class TestRunnerImpl(tr: ImplTestsRepo) extends TestRunner {
 }
 
   object TestRunnerImpl {
-    def get: ZIO[ImplTestsRepo, Throwable, TestRunner] = for {
+    def get: ZIO[ImplTestsRepo with SessionId, Throwable, TestRunner] = for {
       tr <- ZIO.service[ImplTestsRepo]
-      runner = TestRunnerImpl(tr)
+      s <- ZIO.service[SessionId]
+      runner = TestRunnerImpl(tr,s)
     } yield runner
   }
 

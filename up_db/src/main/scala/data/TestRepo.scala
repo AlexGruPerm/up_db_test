@@ -1,6 +1,6 @@
 package data
 
-import common.types.{SessionId, TestInRepo, TestModelRepo}
+import common.types.{SessionId, TestExecutionResult, TestInRepo, TestModelRepo}
 import tmodel.TestModel
 
 import scala.collection.mutable
@@ -28,6 +28,11 @@ trait TestsRepo {
   def checkTestRepoData: UIO[Option[checkTestRepoInfo]]
 
   /**
+   * Update one test in TestModelRepo, test must be with execution results - look TestExecutionResult
+  */
+  def updateTestWithResults(sid: SessionId, testWithResults: TestInRepo): UIO[Unit]
+
+  /**
    * Enable one test in the tests set identified by sid.
   */
   def enableTest(sid: SessionId, id: Int):  UIO[Unit]
@@ -40,7 +45,7 @@ trait TestsRepo {
   /**
    * Disable all tests in the tests set identified by sid.
    */
-  def disableAllTest(sid: SessionId): UIO[Unit]
+  def disableAllTestAndClearExecRes(sid: SessionId): UIO[Unit]
 
   def testsListEnabled(sid: SessionId): UIO[Option[List[TestInRepo]]]
 
@@ -76,11 +81,34 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
           TestsStatus(
             v.tests.getOrElse(List[TestInRepo]()).size,
             v.tests.getOrElse(List[TestInRepo]()).count(t => t.isEnabled),
-            v.tests.getOrElse(List[TestInRepo]()).count(t => !t.isEnabled)))
+            v.tests.getOrElse(List[TestInRepo]()).count(t => !t.isEnabled),
+            v.tests.getOrElse(List[TestInRepo]()).count(t => t.isExecuted)
+            ))
      }(collection.breakOut).toList
     }
    res <- ZIO.succeed(Some(checkTestRepoInfo(lst)))
   } yield res
+
+  def updateTestWithResults(sid: SessionId, testWithResults: TestInRepo): UIO[Unit] = for {
+    test <- lookup(sid)
+    _ <- test match {
+      case Some(s) =>
+        ref.update{
+          tests => tests +
+            (sid -> TestModelRepo(
+              s.meta,
+              s.tests.map{
+                tr => tr.map{t =>
+                  if (t.id == testWithResults.id)
+                    testWithResults
+                  else
+                    t
+                }
+              }
+            ))}
+      case None => ZIO.unit
+    }
+  } yield ()
 
   def enableTest(sid: SessionId, testId: Int): UIO[Unit] = for {
     test <- lookup(sid)
@@ -124,7 +152,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
     }
   } yield ()
 
-  def disableAllTest(sid: SessionId): UIO[Unit] = for {
+  def disableAllTestAndClearExecRes(sid: SessionId): UIO[Unit] = for {
     test <- lookup(sid)
     _ <- test match {
       case Some(s) =>
@@ -133,7 +161,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
             (sid -> TestModelRepo(
               s.meta,
               s.tests.map{
-                tr => tr.map{t =>t.copy(isEnabled = false)
+                tr => tr.map{t =>t.copy(isEnabled = false,isExecuted = false,testRes = TestExecutionResult())
                 }
               }
             ))}
