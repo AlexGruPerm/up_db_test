@@ -38,26 +38,33 @@ case class TestRunnerImpl(tr: ImplTestsRepo) extends TestRunner {
       val res: TestExecutionResult = {
         if (!rs.next())
         //throw new SQLException("! there were no rows.")
-          TestExecutionResult(0L, 0L, tExec - tBegin, List[(String, String)](), 0, 0)
+          TestExecutionResult(0L, 0L, tExec - tBegin, List[(String, String)](), 0)
 
         val v = rs.getObject(1);
         val pgrs = v.asInstanceOf[PgResultSet]
         val columns: IndexedSeq[(String, String)] = (1 to pgrs.getMetaData.getColumnCount)
           .map(cnum => (pgrs.getMetaData.getColumnName(cnum), pgrs.getMetaData.getColumnTypeName(cnum)))
-        val results: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map {
+        // resultsCur.size - internally iterate Iterator to the end.
+        val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map {
           rs => columns.map(cname => rs.getString(cname._1))
         }
+        val results: List[IndexedSeq[String]] = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
         val tFetch = System.currentTimeMillis
+        rs.close()
         val rowsCnt = results.size
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, columns.toList, columns.size, rowsCnt)
-      }
 
-      rs.close()
+/*      todo: If test condition related with data in dataset we can use fetched results as List of rows.
+        println(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        results.foreach(println)
+        println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")*/
+
+        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, columns.toList, rowsCnt)
+      }
       stmt.close()
       res
   }.catchAll {
     case e: Exception => ZIO.logError(s" Exception exec_select_function_cursor msg=${e.getMessage} don't fail")
-      .as(/*Unit*/TestExecutionResult(0L, 0L, 0L, List[(String, String)](), 0, 0)) //*> //todo: maybe remove here
+      .as(/*Unit*/TestExecutionResult(0L, 0L, 0L, List[(String, String)](), 0)) //*> //todo: maybe remove here
           //todo: if we onpen it here anr run nultiple test and if one test fail, execution will stoped and error text send to client correctly.
           //todo: use it for whole tests set execution
       //ZIO.fail(throw new Exception(s"Exception for test.id = [${test.id}] with message ${e.getMessage}"))

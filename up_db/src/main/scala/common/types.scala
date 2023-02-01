@@ -32,6 +32,6 @@ object types {
     }
   }
 
-  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], colSize: Int, rowCount: Int)
+  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int)
 
 }
