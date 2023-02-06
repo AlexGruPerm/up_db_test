@@ -5,14 +5,15 @@ import com.typesafe.config.{Config, ConfigFactory}
 import java.io
 import java.io.File
 
-final case class WebUiConfig(port: Int)
+final case class WebUiConfig(port: Int,nThreads: Int)
 
 case object ConfigHelper {
 
   def getConfig(fileConfig: Config): WebUiConfig = {
     val (webui) = ("webui.")
     WebUiConfig(
-      port = fileConfig.getInt(webui + "port")
+      port = fileConfig.getInt(webui + "port"),
+      nThreads = fileConfig.getInt(webui + "nThreads")
     )
   }
 

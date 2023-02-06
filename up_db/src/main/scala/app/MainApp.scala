@@ -3,6 +3,7 @@ package app
 import conf.{ConfigHelper, WebUiConfig}
 import data.ImplTestsRepo
 import web.webLogic.startWebServer
+import zio.http.Server
 import zio.{Config, ConfigProvider, Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 
 /**
@@ -14,7 +15,7 @@ object MainApp extends ZIOAppDefault{
     for {
       webuiConf <- ZIO.service[WebUiConfig]
       _ <- ZIO.logInfo(s"port = ${webuiConf.port}")
-      _ <- startWebServer().provideSome(ImplTestsRepo.layer)
+      _ <- startWebServer().provideSome(ImplTestsRepo.layer/*,Server.default*/)
     } yield ()
 
   val mainApp: ZIO[ZIOAppArgs, Throwable, Unit] = for {

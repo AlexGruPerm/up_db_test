@@ -7,8 +7,10 @@ import db.jdbcSessionImpl
 import error.ResponseMessage
 import runner.TestRunnerImpl
 import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsMeta, TestsToRun}
-import zhttp.html.Html
-import zhttp.http._
+import zio.http._
+import zio.http.model.{Method, Status}
+//import zhttp.html.Html
+//import zhttp.http._
 import zio.json.{DecoderOps, EncoderOps}
 import zio.{Scope, UIO, ZIO, ZLayer}
 
@@ -136,6 +138,21 @@ object WebUiApp {
       }
     } yield resp
 
+
+  val app: Http[ImplTestsRepo, Throwable, Request, Response] = Http.collectZIO[Request] {
+    case Method.GET -> !! / "random" => ZIO.succeed(Response.text("bar"))
+    case Method.GET -> !! / "utc"    => ZIO.succeed(Response.text("bar"))
+    case Method.GET  -> !! / "greet" / name => getGreet(name)
+    case Method.GET  -> !! / "main" => getMainPage
+    case Method.GET  -> !! / "check" => checkTestsRepo
+    case req@(Method.POST -> !! / "load_test") => loadTests(req)
+    case req@(Method.POST -> !! / "start_test") => startTests(req)
+  }
+
+  val appOk: Http[ImplTestsRepo, Nothing, Request, Response] = Http.collectZIO[Request] {
+    case Method.GET -> !! / "random" => ZIO.succeed(Response.text("xxx"))
+    case Method.GET -> !! / "utc"    => ZIO.succeed(Response.text("yyy"))
+  }
 
   def apply(): Http[ImplTestsRepo, Throwable, Request, Response] =
     Http.collectZIO[Request] {

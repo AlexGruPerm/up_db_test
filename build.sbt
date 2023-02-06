@@ -7,10 +7,9 @@ ThisBuild / scalaVersion := "2.12.15"
   val Versions = new {
     val zio        = "2.0.5"
     val zio_config = "3.0.7"
-    val zio_http     = "2.0.0-RC11"
-    //val zio_http   = "0.0.4"
+    val zio_http   = "0.0.4"
     val zio_json   = "0.3.0-RC11"
-    val pgVers     = "42.2.5"
+    val pgVers     = "42.5.3"
     val dbcp2Vers = "2.9.0"
   }
 
@@ -40,9 +39,7 @@ ThisBuild / scalaVersion := "2.12.15"
       val zio_conf_typesafe = "dev.zio" %% "zio-config-typesafe" % Versions.zio_config
       val zio_conf_magnolia = "dev.zio" %% "zio-config-magnolia" % Versions.zio_config
 
-      val zio_http = "io.d11" %% "zhttp" % Versions.zio_http
-      //val zio_http = "dev.zio" %% "zio-http" % Versions.zio_http
-
+      val zio_http = "dev.zio" %% "zio-http" % Versions.zio_http
       val zio_json = "dev.zio"       %% "zio-json"       % Versions.zio_json
 
       val zioDep = List(zio, zio_conf,zio_conf_typesafe,zio_conf_magnolia, zio_http, zio_json )
