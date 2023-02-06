@@ -37,11 +37,11 @@ object WebUiApp {
 
   val mainPagePath: String = "E:\\PROJECTS\\up_db_test\\up_db\\src\\main\\scala\\html\\index.html"
 
-  def getGreet(name: String): ZIO[Any, Nothing, Response] =
+/*  def getGreet(name: String): ZIO[Any, Nothing, Response] =
     for {
       _ <- ZIO.logInfo(s"[greet] name = $name")
       resp <- ZIO.succeed(Response.text(s"Hello $name!"))
-    } yield resp
+    } yield resp*/
 
   def getMainPage: ZIO[Any, IOException, Response] =
     for {
@@ -105,12 +105,12 @@ object WebUiApp {
     tr <- ZIO.service[ImplTestsRepo]
     _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
     _ <- ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}").when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
-    _ <- tr.disableAllTestAndClearExecRes(testsToRun.sid)//.when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
+    _ <- tr.disableAllTestAndClearExecRes(testsToRun.sid)
     _ <- ZIO.foreachDiscard(testsToRun.ids.getOrElse(List[Int]())) {
       testId => tr.enableTest(testsToRun.sid, testId)
     }
-    testsSet <- tr.lookup(testsToRun.sid)
-    testMeta = ZLayer.succeed(testsSet.get.meta)
+    //testsSet <- tr.lookup(testsToRun.sid)
+    //testMeta = ZLayer.succeed(testsSet.get.meta)
     testRunner <- TestRunnerImpl.get.provideSome(ZLayer.succeed(testsToRun.sid),ZLayer.succeed(tr))
     _ <- testRunner.run()
   } yield ()
@@ -138,30 +138,30 @@ object WebUiApp {
       }
     } yield resp
 
-
-  val app: Http[ImplTestsRepo, Throwable, Request, Response] = Http.collectZIO[Request] {
-    case Method.GET -> !! / "random" => ZIO.succeed(Response.text("bar"))
-    case Method.GET -> !! / "utc"    => ZIO.succeed(Response.text("bar"))
-    case Method.GET  -> !! / "greet" / name => getGreet(name)
+  //todo: Everywhere common equal part - .catchAll, remove in function
+  val app: Http[ImplTestsRepo, Nothing, Request, Response] = Http.collectZIO[Request] {
     case Method.GET  -> !! / "main" => getMainPage
+      .catchAll { e: Exception =>
+        ZIO.logError(e.getMessage) *>
+          ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
+      }
     case Method.GET  -> !! / "check" => checkTestsRepo
-    case req@(Method.POST -> !! / "load_test") => loadTests(req)
-    case req@(Method.POST -> !! / "start_test") => startTests(req)
-  }
-
-  val appOk: Http[ImplTestsRepo, Nothing, Request, Response] = Http.collectZIO[Request] {
-    case Method.GET -> !! / "random" => ZIO.succeed(Response.text("xxx"))
-    case Method.GET -> !! / "utc"    => ZIO.succeed(Response.text("yyy"))
-  }
-
-  def apply(): Http[ImplTestsRepo, Throwable, Request, Response] =
-    Http.collectZIO[Request] {
-      case Method.GET  -> !! / "greet" / name => getGreet(name)
-      case Method.GET  -> !! / "main" => getMainPage
-      case Method.GET  -> !! / "check" => checkTestsRepo
-      case req@(Method.POST -> !! / "load_test") => loadTests(req)
-      case req@(Method.POST -> !! / "start_test") => startTests(req)
+      .catchAll { e: Exception =>
+      ZIO.logError(e.getMessage) *>
+        ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
     }
+    case req@(Method.POST -> !! / "load_test") => loadTests(req)
+      .catchAll { e: Throwable =>
+      ZIO.logError(e.getMessage) *>
+        ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
+    }
+    case req@(Method.POST -> !! / "start_test") => startTests(req)
+      .catchAll { e: Throwable =>
+      ZIO.logError(e.getMessage) *>
+        ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
+    }
+  }
 
+  /*     case Method.GET  -> !! / "greet" / name => getGreet(name)*/
 }
 
