@@ -1,6 +1,8 @@
 package common
 
 import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, undefined}
+import zio.http.html.{_}
+import zio.http.{Handler, Response}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
 object types {
@@ -22,7 +24,29 @@ object types {
                    testState: TestState = undefined,
                    isExecuted: Boolean = false,
                    testRes: TestExecutionResult
-                 )
+                 ){
+    def getTestAsHtml : Html =
+        div(
+         table(
+           tr(
+             td(
+               div(
+                 s"[$id] $name"
+               ),br()
+             )
+           ),
+           tr(),
+           tr(),
+           tr(),
+           tr(),
+           tr(),
+           tr(),
+           tr(),
+           tr()
+         )
+
+      )
+  }
 
   case class TestModelRepo( meta: TestsMeta, tests: Option[List[TestInRepo]])
 

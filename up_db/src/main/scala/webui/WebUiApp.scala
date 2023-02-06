@@ -67,6 +67,9 @@ object WebUiApp {
 
   import TestInRepo._
   import tmodel.EncDecTestModelImplicits._
+  /**
+   * todo: change response, if BadRerquest then JSON with error, if successful then HTML response.
+  */
   def getTestInfo(sid: SessionId, testId: Int): ZIO[ImplTestsRepo, IOException, Response] =
     for {
       _ <- ZIO.logInfo("getTestInfo ")
@@ -74,10 +77,13 @@ object WebUiApp {
       tests <- tr.testsList(sid)
       resp = (tests match {
         case Some(testsList) => testsList.find(_.id == testId) match {
-          case Some(thisTest) => Response.json(thisTest.toJson)
+          case Some(thisTest) => Response.html(thisTest.getTestAsHtml, Status.Ok)
+             //Response.json(thisTest.toJson)
           case None => Response.json(ResponseMessage(s"Test [$testId] not found in repo.").toJson)
+            .setStatus(Status.BadRequest)
         }
         case None => Response.json(ResponseMessage(s"Test [$testId] not found in repo.").toJson)
+          .setStatus(Status.BadRequest)
       })
     } yield resp
 

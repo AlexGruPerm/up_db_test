@@ -13,30 +13,32 @@
 
         async function getTestInfo(testId) {
              console.log('-- request test info ---------------------------------------------- ID= ',testId);
-               const response = await fetch(`test_info/`+globalSessionId+`/`+testId, {
-                    method: "GET"});
+             const pre_json = document.getElementById("json_test_info");
+             const resp_message = document.getElementById("resp_message");
+               const response = await fetch(`test_info/`+globalSessionId+`/`+testId, {method: "GET"});
                responseStatus = response.status;
                    if (responseStatus == 400) {
                      console.log('-- error ----------------------------------------------');
                      console.log('Response status = ',responseStatus);
                      responseText = await response.text();
+                     resp_message.className = 'error_msg';
+                     resp_message.innerHTML = `ERROR:<br/> ${JSON.parse(responseText).message}`;
                      console.log('Response text = ',responseText);
                      console.log('---------------------------------------------------------');
-                     return response;
                    } else {
-                     return response.json();
+                     resp_message.classList.remove('error_msg');
+                     resp_message.innerHTML = "";
+                     responseText = await response.text();
+                     //pre_json.textContent = JSON.stringify(JSON.parse(responseText), undefined, 2);
+                     pre_json.innerHTML = responseText;
                    }
+                   return response;
         }
 
         async function test_info(test){
           const testId = test.id.replace("test_","");
-          const pre_json = document.getElementById("json_test_info");
           console.log('Info for test = ',testId);
-             const resultJson = await getTestInfo(testId);
-             console.log('-- response ---------------------------------------------');
-             console.log(resultJson);
-             pre_json.textContent = JSON.stringify(resultJson, undefined, 2);
-             console.log('---------------------------------------------------------');
+          const resultJson = await getTestInfo(testId);
         }
 
         function parse_response_populate_tests(tests_json){
