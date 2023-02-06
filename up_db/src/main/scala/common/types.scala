@@ -1,6 +1,7 @@
 package common
 
 import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, undefined}
+import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
 object types {
   type SessionId = String
@@ -33,6 +34,7 @@ object types {
       }}
       TestModelRepo(tm.meta, testsInRepo)
     }
+
   }
 
   case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int, errMsg: Option[String] = None)

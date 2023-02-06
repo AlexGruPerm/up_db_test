@@ -65,6 +65,22 @@ object WebUiApp {
 
     } yield resp
 
+  import TestInRepo._
+  import tmodel.EncDecTestModelImplicits._
+  def getTestInfo(sid: SessionId, testId: Int): ZIO[ImplTestsRepo, IOException, Response] =
+    for {
+      _ <- ZIO.logInfo("getTestInfo ")
+      tr <- ZIO.service[ImplTestsRepo]
+      tests <- tr.testsList(sid)
+      resp = (tests match {
+        case Some(testsList) => testsList.find(_.id == testId) match {
+          case Some(thisTest) => Response.json(thisTest.toJson)
+          case None => Response.json(ResponseMessage(s"Test [$testId] not found in repo.").toJson)
+        }
+        case None => Response.json(ResponseMessage(s"Test [$testId] not found in repo.").toJson)
+      })
+    } yield resp
+
   import tmodel.EncDecTestModelImplicits._
   import tmodel.EncDecRespTestModelImplicits._
   import data.TestsRepo
@@ -140,6 +156,10 @@ object WebUiApp {
 
   //todo: Everywhere common equal part - .catchAll, remove in function
   val app: Http[ImplTestsRepo, Nothing, Request, Response] = Http.collectZIO[Request] {
+     case Method.GET  -> !! / "test_info" / sid / testId => getTestInfo(sid, testId.toInt).catchAll { e: Exception =>
+       ZIO.logError(e.getMessage) *>
+         ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
+     }
     case Method.GET  -> !! / "main" => getMainPage
       .catchAll { e: Exception =>
         ZIO.logError(e.getMessage) *>
@@ -160,8 +180,9 @@ object WebUiApp {
       ZIO.logError(e.getMessage) *>
         ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
     }
+
   }
 
-  /*     case Method.GET  -> !! / "greet" / name => getGreet(name)*/
+
 }
 

@@ -1,5 +1,6 @@
 package tmodel
 
+import common.types.{TestExecutionResult, TestInRepo}
 import zio.{Random, ZIO}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
@@ -118,6 +119,21 @@ sealed trait TestState
 
     implicit val encoderTestsToRun: JsonEncoder[TestsToRun] = DeriveJsonEncoder.gen[TestsToRun]
     implicit val decoderTestsToRun: JsonDecoder[TestsToRun] = DeriveJsonDecoder.gen[TestsToRun]
+
+    implicit val encoderTestState: JsonEncoder[TestState] = DeriveJsonEncoder.gen[TestState]
+    implicit val decoderTestState: JsonDecoder[TestState] = JsonDecoder[String].map {
+      case "undefined" => undefined
+      case "success" => success
+      case "failure" => failure
+      case "executing" => executing
+      case anyValue => throw new Exception(s"Invalid value in field call_type = $anyValue")
+    }
+
+    implicit val encoderTestExecutionResult: JsonEncoder[TestExecutionResult] = DeriveJsonEncoder.gen[TestExecutionResult]
+    implicit val decoderTestExecutionResult: JsonDecoder[TestExecutionResult] = DeriveJsonDecoder.gen[TestExecutionResult]
+
+    implicit val encoderTestInRepo: JsonEncoder[TestInRepo] = DeriveJsonEncoder.gen[TestInRepo]
+    implicit val decoderTestInRepo: JsonDecoder[TestInRepo] = DeriveJsonDecoder.gen[TestInRepo]
 
   }
 

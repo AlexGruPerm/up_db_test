@@ -11,8 +11,32 @@
         var checkedCommon;
         var checkedTestIdJson;
 
-        function test_info(test){
-          console.log('Info for test = ', test.id.replace("test_",""));
+        async function getTestInfo(testId) {
+             console.log('-- request test info ---------------------------------------------- ID= ',testId);
+               const response = await fetch(`test_info/`+globalSessionId+`/`+testId, {
+                    method: "GET"});
+               responseStatus = response.status;
+                   if (responseStatus == 400) {
+                     console.log('-- error ----------------------------------------------');
+                     console.log('Response status = ',responseStatus);
+                     responseText = await response.text();
+                     console.log('Response text = ',responseText);
+                     console.log('---------------------------------------------------------');
+                     return response;
+                   } else {
+                     return response.json();
+                   }
+        }
+
+        async function test_info(test){
+          const testId = test.id.replace("test_","");
+          const pre_json = document.getElementById("json_test_info");
+          console.log('Info for test = ',testId);
+             const resultJson = await getTestInfo(testId);
+             console.log('-- response ---------------------------------------------');
+             console.log(resultJson);
+             pre_json.textContent = JSON.stringify(resultJson, undefined, 2);
+             console.log('---------------------------------------------------------');
         }
 
         function parse_response_populate_tests(tests_json){
@@ -116,6 +140,8 @@
 
         async function btnStartTests(){
           console.log('-- start tests ---------------------------------------------');
+          const pre_json = document.getElementById("json_test_info");
+          pre_json.innerHTML = "";
           const tests_container = document.getElementById("test_list");
           checkedTestId = Array.from(tests_container.querySelectorAll("input[type=checkbox]:checked"))
             .map((elem) => parseInt(elem.id.replace("test_","")));
@@ -189,13 +215,23 @@ body {
 .test_executing{color: grey;}
 
 .error_msg{color: red; font-size: 16px;}
+
+.pre_json{
+    height: auto;
+    max-height: 600px;
+    overflow: auto;
+    word-break: normal !important;
+    word-wrap: normal !important;
+    white-space: pre !important;
+}
+
 -->
 </style>
 </head>
 <body>
 <table width="100%" border="2">
     <tr>
-        <td width="70%" height="200px">
+        <td width="60%" height="200px">
             <input id="fileupload" type="file" accept=".json" name="fileupload" />
             <br><br>
             <div id="btn_upload_test_file" onclick="btnUploadTestFile()"  class="label">send json file</div>
@@ -208,9 +244,11 @@ body {
     </tr>
     <tr>
         <td height="600px" >
-            <div id="test_list" class="test_container">
-            </div>
-        </td><td>4</td>
+            <div id="test_list" class="test_container"></div>
+        </td>
+        <td>
+            <pre id="json_test_info" class="pre_json"> Single test results.</pre>
+        </td>
     </tr>
     <tr>
         <td height="100px">
