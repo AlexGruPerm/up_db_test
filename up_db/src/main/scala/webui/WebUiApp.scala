@@ -5,7 +5,7 @@ import common.types.{SessionId, TestInRepo}
 import data.{ImplTestsRepo, TestsRepo, TestsStatus, checkTestRepoInfo}
 import db.jdbcSessionImpl
 import error.ResponseMessage
-import runner.TestRunnerImpl
+import runner.{TestRunner, TestRunnerImpl}
 import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsMeta, TestsToRun}
 import zio.http._
 import zio.http.model.{Method, Status}
@@ -123,7 +123,7 @@ object WebUiApp {
   /**
    * todo: in JS move const tests_container = document.getElementById("test_list"); and for containers in global area
   */
-  private def startTestsLogic(testsToRun: TestsToRun): ZIO[ImplTestsRepo, Throwable, Unit] = for {
+  private def startTestsLogic(testsToRun: TestsToRun): ZIO[ImplTestsRepo with TestRunner, Throwable, Unit] = for {
     tr <- ZIO.service[ImplTestsRepo]
     _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
     _ <- ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}").when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
@@ -131,9 +131,7 @@ object WebUiApp {
     _ <- ZIO.foreachDiscard(testsToRun.ids.getOrElse(List[Int]())) {
       testId => tr.enableTest(testsToRun.sid, testId)
     }
-    //testsSet <- tr.lookup(testsToRun.sid)
-    //testMeta = ZLayer.succeed(testsSet.get.meta)
-    testRunner <- TestRunnerImpl.get.provideSome(ZLayer.succeed(testsToRun.sid),ZLayer.succeed(tr))
+    testRunner <- ZIO.service[TestRunner]
     _ <- testRunner.run()
   } yield ()
 
@@ -142,6 +140,7 @@ object WebUiApp {
   */
   def startTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
     for {
+      tr <- ZIO.service[ImplTestsRepo]
       u <- req.body.asString.map(_.fromJson[TestsToRun])
         .catchAllDefect {
           case e: Exception => ZIO.succeed(Left(e.getMessage))
@@ -150,7 +149,7 @@ object WebUiApp {
         case Left(exp_str) =>
             ZIO.succeed(Response.json(ResponseMessage(exp_str).toJson).setStatus(Status.BadRequest))
         case Right(testsToRun) =>
-          startTestsLogic(testsToRun).catchAllDefect{
+          startTestsLogic(testsToRun).provide(ZLayer.succeed(tr),TestRunnerImpl.layer, ZLayer.succeed(testsToRun.sid)).catchAllDefect{
             case e: Exception =>
               ZIO.logError(s"Debug ${e.getMessage} - ${e.getClass.getName} ") *> ZIO.fail(e)
           }.foldZIO(

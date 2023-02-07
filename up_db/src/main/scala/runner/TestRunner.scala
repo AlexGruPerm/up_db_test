@@ -105,11 +105,8 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
 }
 
   object TestRunnerImpl {
-    def get: ZIO[ImplTestsRepo with SessionId, Throwable, TestRunner] = for {
-      tr <- ZIO.service[ImplTestsRepo]
-      s <- ZIO.service[SessionId]
-      runner = TestRunnerImpl(tr,s)
-    } yield runner
+    val layer: ZLayer[ImplTestsRepo with SessionId, Throwable, TestRunner] =
+      ZLayer.fromFunction((testRepo,sid) => TestRunnerImpl(testRepo,sid))
   }
 
 
