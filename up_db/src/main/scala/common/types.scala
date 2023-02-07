@@ -25,8 +25,8 @@ object types {
                    isExecuted: Boolean = false,
                    testRes: TestExecutionResult
                  ){
-    def getTestAsHtml : Html =
-        div(
+    def getTestAsHtml : Html = div("div content")//.attr("id","div_1")
+/*        div(
          table(
            tr(
              td(
@@ -44,8 +44,7 @@ object types {
            tr(),
            tr()
          )
-
-      )
+      )*/
   }
 
   case class TestModelRepo( meta: TestsMeta, tests: Option[List[TestInRepo]])
