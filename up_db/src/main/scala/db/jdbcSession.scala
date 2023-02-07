@@ -9,11 +9,11 @@ import java.util.Properties
 case class pgSess(sess : Connection, pid : Int)
 
 trait jdbcSession {
-  val pgConnection: Task[pgSess]
+  val pgConnection: ZIO[Any,Throwable,pgSess]
 }
 
 case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
-  override val pgConnection: Task[pgSess] = for {
+  override val pgConnection:  ZIO[Any,Throwable,pgSess] = for {
     _ <- ZIO.unit
     sessEffect = ZIO.attemptBlocking{
       try {
@@ -58,8 +58,12 @@ case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
 }
 
 object jdbcSessionImpl {
-  def get: ZIO[TestsMeta, Throwable, jdbcSessionImpl] = for {
-    tm <- ZIO.service[TestsMeta]
-    j = jdbcSessionImpl(tm)
-  } yield j
+
+  val layer: ZLayer[TestsMeta, Throwable, jdbcSession] =
+    ZLayer{
+      for {
+        testMeta <- ZIO.service[TestsMeta]
+      } yield jdbcSessionImpl(testMeta)
+    }
+
 }

@@ -2,7 +2,7 @@ package runner
 
 import common.types.{SessionId, TestExecutionResult, TestInRepo}
 import data.ImplTestsRepo
-import db.{jdbcSessionImpl, pgSess}
+import db.{jdbcSession, jdbcSessionImpl, pgSess}
 import org.postgresql.jdbc.PgResultSet
 import tmodel.{TestsMeta, cursor, select_function}
 import zio.{ZIO, ZLayer}
@@ -75,8 +75,9 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
   } yield ()
 
 
-  private def exec(meta: TestsMeta, test: TestInRepo): ZIO[Any, Throwable, Unit] = for {
-    jdbc <- jdbcSessionImpl.get.provide(ZLayer.succeed(meta))
+  private def exec(test: TestInRepo): ZIO[TestsMeta with jdbcSession, Throwable, Unit] = for {
+    meta <- ZIO.service[TestsMeta]
+    jdbc <- ZIO.service[jdbcSession]
     conn <- jdbc.pgConnection
     _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] ${meta.urlMsg} isOpened Connection = ${!conn.sess.isClosed}")
     _ <- test.call_type match {
@@ -96,7 +97,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
           ZIO.logInfo(s" Begin tests set execution for SID = $sid") *>
           ZIO.foreachDiscard(testsSet.tests.getOrElse(List[TestInRepo]()).filter(_.isEnabled == true)) {
             testId: TestInRepo =>
-              exec(testsSet.meta, testId)
+              exec(testId).provide(ZLayer.succeed(testsSet.meta), jdbcSessionImpl.layer)
           }//Here we can use catchAllDefect for catch errors for all tests in set.
         case None => ZIO.unit
       }
