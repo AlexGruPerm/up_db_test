@@ -94,7 +94,7 @@ object WebUiApp {
         }
 
       resp <- u match {
-        case Left(exp_str) => ZIO.succeed(Response.json(ResponseMessage(exp_str).toJson).setStatus(Status.BadRequest))
+        case Left(exp_str) => ZioResponseMsgBadRequest(exp_str)
         case Right(testsWithMeta) =>
           tr.create(testsWithMeta).flatMap { sid =>
             ZIO.logInfo(s"SID = $sid") *>
@@ -106,7 +106,7 @@ object WebUiApp {
                   ).toJson)
               }
           }.foldZIO(
-            err => ZIO.succeed(Response.json(ResponseMessage(err.getMessage).toJson).setStatus(Status.BadRequest)),
+            err => ZioResponseMsgBadRequest(err.getMessage),
             succ => ZIO.succeed(succ)
           )
       }
@@ -127,6 +127,13 @@ object WebUiApp {
     _ <- testRunner.run()
   } yield ()
 
+  //todo: Analyze and remove boilerplate
+  //todo: ZIO.succeed(Response.json(ResponseMessage(err.getMessage).toJson).setStatus(Status.BadRequest)) =>
+  //todo: ZioResponseMsgBadRequest(message: String)
+
+  def ZioResponseMsgBadRequest(message: String): ZIO[Any,Nothing,Response] =
+    ZIO.succeed(Response.json(ResponseMessage(message).toJson).setStatus(Status.BadRequest))
+
   /**
    * Start selected tests (array of id) from Tests set identified by sid.
   */
@@ -138,12 +145,11 @@ object WebUiApp {
           case e: Exception => ZIO.succeed(Left(e.getMessage))
         }
       resp <- u match {
-        case Left(exp_str) =>
-            ZIO.succeed(Response.json(ResponseMessage(exp_str).toJson).setStatus(Status.BadRequest))
+        case Left(exp_str) => ZioResponseMsgBadRequest(exp_str)
         case Right(testsToRun) =>
           startTestsLogic(testsToRun).provide(ZLayer.succeed(tr),TestRunnerImpl.layer, ZLayer.succeed(testsToRun.sid))
           .foldZIO(
-            err => ZIO.succeed(Response.json(ResponseMessage(err.getMessage).toJson).setStatus(Status.BadRequest)),
+            err => ZioResponseMsgBadRequest(err.getMessage),
             _ => ZIO.succeed(Response.json(ResponseMessage("OK").toJson))
           )
       }
@@ -154,8 +160,7 @@ object WebUiApp {
   */
   def catchCover[A](eff: ZIO[A, Exception, Response]): ZIO[A, Nothing, Response] =
     eff.catchAll { e: Exception =>
-      ZIO.logError(e.getMessage) *>
-        ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
+      ZIO.logError(e.getMessage) *> ZioResponseMsgBadRequest(e.getMessage)
     }
 
   //todo: Everywhere common equal part - .catchAll, remove in function
