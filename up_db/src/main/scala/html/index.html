@@ -10,6 +10,17 @@
         var checkedTestId;
         var checkedCommon;
         var checkedTestIdJson;
+        var isTestsExecuting = 0;
+        var intervalTestsAgrState = setInterval(getTestsAgrInfo, 500);
+
+        function getTestsAgrInfo() {
+          const date = new Date();
+          document.getElementById("test_current_state").innerHTML = date.toLocaleTimeString();
+        }
+
+        function myStopFunction() {
+          clearInterval(intervalTestsAgrState);
+        }
 
         async function getTestInfo(testId) {
              console.log('-- request test info ---------------------------------------------- ID= ',testId);
@@ -141,7 +152,7 @@
         }
 
         async function btnStartTests(){
-          console.log('-- start tests ---------------------------------------------');
+          console.log('-- start tests -------------------- isTestsExecuting=',isTestsExecuting);
           const pre_json = document.getElementById("json_test_info");
           pre_json.innerHTML = "";
           const tests_container = document.getElementById("test_list");
@@ -151,10 +162,14 @@
           console.log("checkedCommon = ",checkedCommon);
           checkedTestIdJson = JSON.parse(JSON.stringify(checkedCommon));
           console.log("checkedTestIdJson = ",checkedTestIdJson);
+             if (checkedTestId.length) {
+             isTestsExecuting = 1;
+             }
              const resultJson = await startJsonTests();
-             console.log('-- response ---------------------------------------------');
+             console.log('-- response -------------------------------- isTestsExecuting =',isTestsExecuting);
              console.log(resultJson);
-             console.log('---------------------------------------------------------');
+             isTestsExecuting = 0;
+             console.log('------------------------------------------- isTestsExecuting =',isTestsExecuting);
         }
 
         function btnSelectAll(){
@@ -227,6 +242,10 @@ body {
     white-space: pre !important;
 }
 
+span:hover {
+    background-color: #DCDCDC;
+}
+
 -->
 </style>
 </head>
@@ -242,7 +261,10 @@ body {
                     <div id="btn_unselect_all" onclick="btnUnelectAll()" class="select_label">Unselect all</div>
                 </div><br>
             <div id="resp_message"></div>
-        </td><td>2</td>
+        </td>
+        <td>
+          <div id="test_current_state">tests current state.</div>
+        </td>
     </tr>
     <tr>
         <td height="600px" >
