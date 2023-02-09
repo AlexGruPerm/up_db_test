@@ -66,6 +66,14 @@ sealed trait TestState
         }
       this.copy(conditionResult = Some(execResultValue)) //todo: FIX !!!
     }
+
+    /**
+     * remove information about execResultValue and conditionResult
+    */
+    def uncheck():SucCondElement = {
+      this.copy(execResultValue = None, conditionResult = None)
+    }
+
   }
 
 
@@ -143,11 +151,12 @@ sealed trait TestState
     implicit val decoderTestsToRun: JsonDecoder[TestsToRun] = DeriveJsonDecoder.gen[TestsToRun]
 
     implicit val encoderTestState: JsonEncoder[TestState] = DeriveJsonEncoder.gen[TestState]
+
     implicit val decoderTestState: JsonDecoder[TestState] = JsonDecoder[String].map {
-      case "undefined" => testStateUndefined
-      case "success" => testStateSuccess
-      case "failure" => testStateFailure
-      case "executing" => testStateExecuting
+      case "testStateUndefined" => testStateUndefined
+      case "testStateSuccess" => testStateSuccess
+      case "testStateFailure" => testStateFailure
+      case "testStateExecuting" => testStateExecuting
       case anyValue => throw new Exception(s"Invalid value in field call_type = $anyValue")
     }
 
