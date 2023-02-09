@@ -22,7 +22,7 @@ trait TestRunner {
 case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner {
 
   private def updateTestWithResult(test: TestInRepo): ZIO[Any, Exception, Unit] = for {
-    _ <- tr.updateTestWithResults(sid, test)
+    _ <- tr.updateTestWithResults(sid, test.checkConditions)
   } yield ()
 
   import java.sql.Types
@@ -71,15 +71,15 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
   }
     testResult <- execDbCall
     _ <- ZIO.logInfo(s"test res = ${testResult}")
-    _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult)/*test.copy(isExecuted = true, testRes = testResult)*/)
+    _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
   } yield ()
 
 
   private def exec(test: TestInRepo): ZIO[TestsMeta with jdbcSession, Exception, Unit] = for {
-    meta <- ZIO.service[TestsMeta]
+    /*meta <- ZIO.service[TestsMeta]*/
     jdbc <- ZIO.service[jdbcSession]
     conn <- jdbc.pgConnection
-    _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] ${meta.urlMsg} isOpened Connection = ${!conn.sess.isClosed}")
+    _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] isOpened Connection = ${!conn.sess.isClosed}")
     _ <- test.call_type match {
       case _: select_function.type =>
         test.ret_type match {

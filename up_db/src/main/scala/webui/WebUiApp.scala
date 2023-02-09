@@ -66,8 +66,9 @@ object WebUiApp {
       tests <- tr.testsList(sid)
       resp = (tests match {
         case Some(testsList) => testsList.find(_.id == testId) match {
-          case Some(thisTest) => Response.html(thisTest.getTestAsHtml, Status.Ok)
-             //Response.json(thisTest.toJson)
+          case Some(thisTest) =>
+            //Response.html(thisTest.getTestAsHtml, Status.Ok)
+             Response.json(thisTest.toJson)
           case None => Response.json(ResponseMessage(s"Test [$testId] not found in repo.").toJson)
             .setStatus(Status.BadRequest)
         }
@@ -106,8 +107,8 @@ object WebUiApp {
                   ).toJson)
               }
           }.foldZIO(
-            err => ZioResponseMsgBadRequest(err.getMessage),
-            succ => ZIO.succeed(succ)
+            error   => ZioResponseMsgBadRequest(error.getMessage),
+            success => ZIO.succeed(success)
           )
       }
     } yield resp
@@ -118,7 +119,8 @@ object WebUiApp {
   private def startTestsLogic(testsToRun: TestsToRun): ZIO[ImplTestsRepo with TestRunner, Exception, Unit] = for {
     tr <- ZIO.service[ImplTestsRepo]
     _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
-    _ <- ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}").when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
+    _ <- ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}")
+      .when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
     _ <- tr.disableAllTestAndClearExecRes(testsToRun.sid)
     _ <- ZIO.foreachDiscard(testsToRun.ids.getOrElse(List[Int]())) {
       testId => tr.enableTest(testsToRun.sid, testId)

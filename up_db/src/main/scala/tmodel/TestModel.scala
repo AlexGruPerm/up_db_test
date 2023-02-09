@@ -31,7 +31,9 @@ sealed trait RetType
 
 sealed trait SucCond
   case object rows_gt extends SucCond
+  case object rows_lt extends SucCond
   case object rows_eq extends SucCond
+  case object rows_ne extends SucCond
   case object exec_time_ms  extends SucCond
   case object fetch_time_ms extends SucCond
   case object full_time_ms  extends SucCond
@@ -39,16 +41,32 @@ sealed trait SucCond
   //case object exception extends SucCond("exception")
 
 sealed trait TestState
-  case object undefined extends TestState
-  case object success extends TestState
-  case object failure extends  TestState
-  case object executing extends TestState
+  case object testStateUndefined extends TestState
+  case object testStateSuccess extends TestState
+  case object testStateFailure extends  TestState
+  case object testStateExecuting extends TestState
 
-
+//  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean])
+//  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int, errMsg: Option[String] = None)
 /*
   execResultValue: row count, scalar value (Int,String,....), is_exception = 0,1, execution_Time
   */
-  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean])
+  //todo: late change Int to Long
+  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean]){
+    def check(testRes: TestExecutionResult):SucCondElement = {
+      val execResultValue: Boolean =
+        condition match {
+        case _:rows_gt.type => checkValue < testRes.rowCount
+        case _:rows_lt.type => checkValue > testRes.rowCount
+        case _:rows_eq.type => checkValue == testRes.rowCount
+        case _:rows_ne.type => checkValue != testRes.rowCount
+        case _:exec_time_ms.type  => testRes.execMs <= checkValue
+        case _:fetch_time_ms.type => testRes.fetchMs <= checkValue
+        case _:full_time_ms.type  => testRes.totalMs <= checkValue
+        }
+      this.copy(conditionResult = Some(execResultValue)) //todo: FIX !!!
+    }
+  }
 
 
   case class TestsMeta(connect_ip: String,
@@ -99,8 +117,10 @@ sealed trait TestState
 
     implicit val encoderSucCond: JsonEncoder[SucCond] = DeriveJsonEncoder.gen[SucCond]
     implicit val decoderSucCond: JsonDecoder[SucCond] = JsonDecoder[String].map {
-      case "rows_eq" => rows_eq
       case "rows_gt" => rows_gt
+      case "rows_lt" => rows_lt
+      case "rows_eq" => rows_eq
+      case "rows_ne" => rows_ne
       case "exec_time_ms" => exec_time_ms
       case "fetch_time_ms" => fetch_time_ms
       case "full_time_ms" => full_time_ms
@@ -124,10 +144,10 @@ sealed trait TestState
 
     implicit val encoderTestState: JsonEncoder[TestState] = DeriveJsonEncoder.gen[TestState]
     implicit val decoderTestState: JsonDecoder[TestState] = JsonDecoder[String].map {
-      case "undefined" => undefined
-      case "success" => success
-      case "failure" => failure
-      case "executing" => executing
+      case "undefined" => testStateUndefined
+      case "success" => testStateSuccess
+      case "failure" => testStateFailure
+      case "executing" => testStateExecuting
       case anyValue => throw new Exception(s"Invalid value in field call_type = $anyValue")
     }
 
