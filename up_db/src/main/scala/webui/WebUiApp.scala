@@ -2,22 +2,17 @@ package webui
 
 
 import common.types.{SessionId, TestInRepo}
-import data.{ImplTestsRepo, TestsRepo, TestsStatus, checkTestRepoInfo}
-import db.jdbcSessionImpl
+import data.{ImplTestsRepo}
 import error.ResponseMessage
 import runner.{TestRunner, TestRunnerImpl}
-import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsMeta, TestsToRun}
+import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsToRun}
 import zio.http._
 import zio.http.model.{Method, Status}
-//import zhttp.html.Html
-//import zhttp.http._
 import zio.json.{DecoderOps, EncoderOps}
-import zio.{Scope, UIO, ZIO, ZLayer}
+import zio.{Scope, ZIO, ZLayer}
 
 import java.io.IOException
 import scala.io._
-import java.io.{FileInputStream, IOException}
-import java.nio.charset.Charset
 
 
 /**
@@ -36,12 +31,6 @@ object WebUiApp {
     ZIO.acquireRelease(acquire(name))(release(_))
 
   val mainPagePath: String = "E:\\PROJECTS\\up_db_test\\up_db\\src\\main\\scala\\html\\index.html"
-
-/*  def getGreet(name: String): ZIO[Any, Nothing, Response] =
-    for {
-      _ <- ZIO.logInfo(s"[greet] name = $name")
-      resp <- ZIO.succeed(Response.text(s"Hello $name!"))
-    } yield resp*/
 
   def getMainPage: ZIO[Any, IOException, Response] =
     for {
@@ -91,39 +80,42 @@ object WebUiApp {
   import tmodel.EncDecRespTestModelImplicits._
   import data.TestsRepo
   //CharsetUtil.UTF_8
-  def loadTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
+  def loadTests(req: Request): ZIO[ImplTestsRepo, Exception, Response] =
     for {
       tr <- ZIO.service[ImplTestsRepo]
-/*      bodyAsStr <- req.body.asString
+      /*      bodyAsStr <- req.body.asString
       _ <- ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~") *>
         ZIO.logInfo(s"bodyAsStr = $bodyAsStr") *>
         ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")*/
 
       u <- req.body.asString.map(_.fromJson[TestModel])
-        .catchAllDefect{
-        case e: Exception => ZIO.succeed(Left(e.getMessage))
-      }
+        .catchAll{
+          case e: Exception => ZIO.succeed(Left(e.getMessage))
+        }
 
       resp <- u match {
         case Left(exp_str) => ZIO.succeed(Response.json(ResponseMessage(exp_str).toJson).setStatus(Status.BadRequest))
         case Right(testsWithMeta) =>
-          tr.create(testsWithMeta).flatMap{sid =>
+          tr.create(testsWithMeta).flatMap { sid =>
             ZIO.logInfo(s"SID = $sid") *>
-              tr.testsList(sid).map{
+              tr.testsList(sid).map {
                 optTests =>
-                    Response.json(RespTestModel(
-                      Session(sid),
-                      optTests.map{trp => trp.map{t => RespTest(t.id, s"[${t.id}] ${t.name}")}}
-                    ).toJson)
+                  Response.json(RespTestModel(
+                    Session(sid),
+                    optTests.map { trp => trp.map { t => RespTest(t.id, s"[${t.id}] ${t.name}") } }
+                  ).toJson)
               }
-         }
+          }.foldZIO(
+            err => ZIO.succeed(Response.json(ResponseMessage(err.getMessage).toJson).setStatus(Status.BadRequest)),
+            succ => ZIO.succeed(succ)
+          )
       }
     } yield resp
 
   /**
    * todo: in JS move const tests_container = document.getElementById("test_list"); and for containers in global area
   */
-  private def startTestsLogic(testsToRun: TestsToRun): ZIO[ImplTestsRepo with TestRunner, Throwable, Unit] = for {
+  private def startTestsLogic(testsToRun: TestsToRun): ZIO[ImplTestsRepo with TestRunner, Exception, Unit] = for {
     tr <- ZIO.service[ImplTestsRepo]
     _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
     _ <- ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}").when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
@@ -138,54 +130,41 @@ object WebUiApp {
   /**
    * Start selected tests (array of id) from Tests set identified by sid.
   */
-  def startTests(req: Request): ZIO[ImplTestsRepo, Throwable, Response] =
+  def startTests(req: Request): ZIO[ImplTestsRepo, Exception, Response] =
     for {
       tr <- ZIO.service[ImplTestsRepo]
       u <- req.body.asString.map(_.fromJson[TestsToRun])
-        .catchAllDefect {
+        .catchAll{
           case e: Exception => ZIO.succeed(Left(e.getMessage))
         }
       resp <- u match {
         case Left(exp_str) =>
             ZIO.succeed(Response.json(ResponseMessage(exp_str).toJson).setStatus(Status.BadRequest))
         case Right(testsToRun) =>
-          startTestsLogic(testsToRun).provide(ZLayer.succeed(tr),TestRunnerImpl.layer, ZLayer.succeed(testsToRun.sid)).catchAllDefect{
-            case e: Exception =>
-              ZIO.logError(s"Debug ${e.getMessage} - ${e.getClass.getName} ") *> ZIO.fail(e)
-          }.foldZIO(
+          startTestsLogic(testsToRun).provide(ZLayer.succeed(tr),TestRunnerImpl.layer, ZLayer.succeed(testsToRun.sid))
+          .foldZIO(
             err => ZIO.succeed(Response.json(ResponseMessage(err.getMessage).toJson).setStatus(Status.BadRequest)),
             _ => ZIO.succeed(Response.json(ResponseMessage("OK").toJson))
           )
       }
     } yield resp
 
-  //todo: Everywhere common equal part - .catchAll, remove in function
-  val app: Http[ImplTestsRepo, Nothing, Request, Response] = Http.collectZIO[Request] {
-     case Method.GET  -> !! / "test_info" / sid / testId => getTestInfo(sid, testId.toInt).catchAll { e: Exception =>
-       ZIO.logError(e.getMessage) *>
-         ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
-     }
-    case Method.GET  -> !! / "main" => getMainPage
-      .catchAll { e: Exception =>
-        ZIO.logError(e.getMessage) *>
-          ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
-      }
-    case Method.GET  -> !! / "check" => checkTestsRepo
-      .catchAll { e: Exception =>
-      ZIO.logError(e.getMessage) *>
-        ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
-    }
-    case req@(Method.POST -> !! / "load_test") => loadTests(req)
-      .catchAll { e: Throwable =>
-      ZIO.logError(e.getMessage) *>
-        ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
-    }
-    case req@(Method.POST -> !! / "start_test") => startTests(req)
-      .catchAll { e: Throwable =>
+  /**
+   * Add catchAll common part to effect.
+  */
+  def catchCover[A](eff: ZIO[A, Exception, Response]): ZIO[A, Nothing, Response] =
+    eff.catchAll { e: Exception =>
       ZIO.logError(e.getMessage) *>
         ZIO.succeed(Response.json(ResponseMessage(e.getMessage).toJson).setStatus(Status.BadRequest))
     }
 
+  //todo: Everywhere common equal part - .catchAll, remove in function
+  val app: Http[ImplTestsRepo, Nothing, Request, Response] = Http.collectZIO[Request] {
+     case Method.GET  -> !! / "test_info" / sid / testId => catchCover(getTestInfo(sid, testId.toInt))
+     case Method.GET  -> !! / "main" => catchCover(getMainPage)
+     case Method.GET  -> !! / "check" => catchCover(checkTestsRepo)
+     case req@(Method.POST -> !! / "load_test") => catchCover(loadTests(req))
+     case req@(Method.POST -> !! / "start_test") => catchCover(startTests(req))
   }
 
 

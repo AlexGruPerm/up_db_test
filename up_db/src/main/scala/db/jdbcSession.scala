@@ -9,11 +9,11 @@ import java.util.Properties
 case class pgSess(sess : Connection, pid : Int)
 
 trait jdbcSession {
-  val pgConnection: ZIO[Any,Throwable,pgSess]
+  val pgConnection: ZIO[Any,Exception,pgSess]
 }
 
 case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
-  override val pgConnection:  ZIO[Any,Throwable,pgSess] = for {
+  override val pgConnection:  ZIO[Any,Exception,pgSess] = for {
     _ <- ZIO.unit
     sessEffect = ZIO.attemptBlocking{
       try {
@@ -41,7 +41,7 @@ case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
     _ <- ZIO.logInfo(s"pg_backend_pid = ${sess.pid}")
   } yield sess
 
-  def getMaxConnections(connection: pgSess): ZIO[Any,Throwable,Int] =
+  def getMaxConnections(connection: pgSess): ZIO[Any,Exception,Int] =
     for {
       maxConn <- ZIO.attemptBlocking{
         connection.sess.setAutoCommit(false)
@@ -52,6 +52,9 @@ case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
             | WHERE  name = 'max_connections' """.stripMargin)
         rs.next()
         rs.getInt("setting")
+      }.catchAll {
+        case e: Exception => ZIO.logError(s" Exception getMaxConnections msg=${e.getMessage}") *>
+          ZIO.fail(throw new Exception(e.getMessage +cp.urlMsg))
       }
     } yield maxConn
 
@@ -59,7 +62,7 @@ case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
 
 object jdbcSessionImpl {
 
-  val layer: ZLayer[TestsMeta, Throwable, jdbcSession] =
+  val layer: ZLayer[TestsMeta, Exception, jdbcSession] =
     ZLayer{
       for {
         testMeta <- ZIO.service[TestsMeta]

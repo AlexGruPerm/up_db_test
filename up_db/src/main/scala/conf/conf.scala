@@ -17,7 +17,7 @@ case object ConfigHelper {
     )
   }
 
-  val config: ZIO[String, Throwable, WebUiConfig] =
+  val config: ZIO[String, Exception, WebUiConfig] =
     for {
       configParam <- ZIO.service[String]
       configFilename: String = System.getProperty("user.dir") + File.separator + configParam
@@ -25,7 +25,7 @@ case object ConfigHelper {
       appConfig = ConfigHelper.getConfig(fileConfig)
     } yield appConfig
 
-  def ConfigZLayer(confParam: ZIOAppArgs): ZIO[Any, Throwable, ZLayer[Any, Throwable, WebUiConfig]] = for {
+  def ConfigZLayer(confParam: ZIOAppArgs): ZIO[Any, Exception, ZLayer[Any, Exception, WebUiConfig]] = for {
     _ <- ZIO.fail(new Exception("Empty parameters. Please provide input config file."))
       .when(confParam.getArgs.isEmpty)
     appCfg = ZLayer {

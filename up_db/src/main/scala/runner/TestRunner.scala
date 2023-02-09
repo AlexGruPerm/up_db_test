@@ -11,7 +11,7 @@ import java.sql.{ResultSet, SQLException}
 import scala.reflect.internal.ClassfileConstants.instanceof
 
 trait TestRunner {
-  def run(): ZIO[Any, Throwable, Unit]
+  def run(): ZIO[Any, Exception, Unit]
 }
 
 /**
@@ -21,12 +21,12 @@ trait TestRunner {
 */
 case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner {
 
-  private def updateTestWithResult(test: TestInRepo): ZIO[Any, Throwable, Unit] = for {
+  private def updateTestWithResult(test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- tr.updateTestWithResults(sid, test)
   } yield ()
 
   import java.sql.Types
-  private def exec_select_function_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Throwable, Unit] = for {
+  private def exec_select_function_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: ZIO[Any,Nothing,TestExecutionResult] = ZIO.attemptBlocking {
@@ -75,7 +75,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
   } yield ()
 
 
-  private def exec(test: TestInRepo): ZIO[TestsMeta with jdbcSession, Throwable, Unit] = for {
+  private def exec(test: TestInRepo): ZIO[TestsMeta with jdbcSession, Exception, Unit] = for {
     meta <- ZIO.service[TestsMeta]
     jdbc <- ZIO.service[jdbcSession]
     conn <- jdbc.pgConnection
@@ -90,7 +90,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     }
   } yield ()
 
-  def run: ZIO[Any, Throwable, Unit] = for {
+  def run: ZIO[Any, Exception, Unit] = for {
       testsSetOpt <- tr.lookup(sid)
       _ <- testsSetOpt match {
         case Some(testsSet) =>
@@ -105,7 +105,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
 }
 
   object TestRunnerImpl {
-    val layer: ZLayer[ImplTestsRepo with SessionId, Throwable, TestRunner] =
+    val layer: ZLayer[ImplTestsRepo with SessionId, Exception, TestRunner] =
       ZLayer.fromFunction((testRepo,sid) => TestRunnerImpl(testRepo,sid))
   }
 
