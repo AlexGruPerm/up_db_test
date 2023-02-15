@@ -36,7 +36,36 @@
                      curr_state.classList.remove('error_msg');
                      curr_state.innerHTML = "";
                      responseText = await response.text();
-                     curr_state.innerHTML = responseText;
+
+                     const response_json = JSON.parse(responseText);
+                     const t_total    = response_json.tests.total;
+                     const t_enabled  = response_json.tests.enabled;
+                     const t_disabled = response_json.tests.disabled;
+                     const t_executed = response_json.tests.executed;
+                     const t_success  = response_json.tests.success;
+                     const t_failure  = response_json.tests.failure;
+                     const t_percent  = Math.round((t_executed*100)/t_enabled);
+
+                     curr_state.innerHTML = "";
+                     curr_state.innerHTML  = `<div>total : ${t_total} </div>`;
+                     curr_state.innerHTML += `<div>enabled : ${t_enabled} </div>`;
+                     curr_state.innerHTML += `<div>disabled : ${t_disabled} </div>`;
+                     curr_state.innerHTML += `<div>executed : ${t_executed} </div>`;
+                     curr_state.innerHTML += `<div>success : ${t_success} </div>`;
+                     curr_state.innerHTML += `<div>failure : ${t_failure} </div>`;
+                     curr_state.innerHTML += `<div>percent : ${t_percent} </div>`;
+
+                     curr_state.classList.remove('test_state_undef');
+                       if (t_executed < t_enabled) {
+                         curr_state.className = 'test_state_executing';
+                         console.log('set class - test_state_executing ');
+                       } else if (t_enabled == t_success) {
+                         console.log('set class - test_state_success ');
+                         curr_state.className = 'test_state_success';
+                       } else {
+                         curr_state.className = 'test_state_failure';
+                         console.log('set class - test_state_failure ');
+                       }
                    }
                    return response;
         }
@@ -175,6 +204,7 @@
                      return response;
                    } else {
                      myStopFunction();
+                     getTestsState();
                      resp_message.classList.remove('error_msg');
                      resp_message.innerHTML = "";
                      return response.json();
@@ -280,6 +310,11 @@ span:hover {
     background-color: #DCDCDC;
 }
 
+.test_state_undef {background-color: #D3D3D3;}
+.test_state_executing {background-color: #FFFFE0;}
+.test_state_success {background-color: #8FBC8F;}
+.test_state_failure {background-color: #F08080;}
+
 -->
 </style>
 </head>
@@ -293,12 +328,13 @@ span:hover {
                 <div class="sel-button-container">
                     <div id="btn_select_all" onclick="btnSelectAll()" class="select_label">Select all</div>
                     <div id="btn_unselect_all" onclick="btnUnelectAll()" class="select_label">Unselect all</div>
+                    <div id="btn_start_tests" onclick="btnStartTests()" class="select_label">Start tests</div>
                 </div><br>
             <div id="resp_message"></div>
         </td>
         <td>
             <div id="div_timer"></div><br>
-            <div id="test_current_state">tests current state.</div>
+            <div id="test_current_state" class="test_state_undef">tests current state.</div>
         </td>
     </tr>
     <tr>
@@ -308,12 +344,6 @@ span:hover {
         <td>
             <pre id="json_test_info" class="pre_json"> Single test results.</pre>
         </td>
-    </tr>
-    <tr>
-        <td height="100px">
-            <br><br>
-            <div id="btn_start_tests" onclick="btnStartTests()" class="label">Start tests</div>
-        </td><td>6</td>
     </tr>
 </table>
 </body>

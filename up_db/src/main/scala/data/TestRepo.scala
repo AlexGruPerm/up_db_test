@@ -84,8 +84,15 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
         v.tests.getOrElse(List[TestInRepo]()).count(t => !t.isEnabled),
         v.tests.getOrElse(List[TestInRepo]()).count(t => t.isExecuted),
         v.tests.getOrElse(List[TestInRepo]()).count(t => t.testState == testStateSuccess),
-        v.tests.getOrElse(List[TestInRepo]()).count(t => t.testState == testStateFailure)
-       ))
+        v.tests.getOrElse(List[TestInRepo]()).count(t => t.testState == testStateFailure),
+        //todo: ask a mentor about this cases, what's preferable.
+        v.tests.getOrElse(List[TestInRepo]()).filter(t => t.testState
+        match {
+          case _: testStateSuccess.type => true
+          case _ => false})
+          .map(_.id),
+        v.tests.getOrElse(List[TestInRepo]()).filter(_.testState == testStateFailure).map(_.id)
+      ))
       }
     res <- ZIO.succeed(res)
 
