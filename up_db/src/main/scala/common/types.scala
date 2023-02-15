@@ -60,13 +60,12 @@ object types {
       div(
          table(
            borderAttr := "1px",
-           css := (if (testState == testStateFailure) {
+           css := (if (testState == testStateFailure)
                      "test_state_failure" :: Nil
-                   } else if (testState == testStateSuccess) {
-                    "test_state_success" :: Nil
-                 } else {
-                    "test_state_undef" :: Nil
-                 }),
+                   else if (testState == testStateSuccess)
+                     "test_state_success" :: Nil
+                   else
+                     "test_state_undef" :: Nil),
            idAttr := s"table_test_$id",
            tr(
              td(
@@ -81,10 +80,32 @@ object types {
            tr(td(colSpanAttr:= "2",div("Call :"))),
            tr(td(colSpanAttr:= "2",call)),
            tr(td(colSpanAttr:= "2","Success conditions:")),
-           tr(colSpanAttr:= "2",
-             //table with success conditions
-
-           ),
+           tr(td(colSpanAttr:= "2",
+             //table with success conditions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+             //condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean]
+               table(
+                 borderAttr := "1px",
+                 idAttr := s"table_test_conditions_$id",
+                 tr(
+                   td("Condition"),
+                   td("Check value"),
+                   td("Exec value"),
+                   td("Result")
+                 ),
+                 success_condition.getOrElse(List[SucCondElement]()).map {sc =>
+                   tr(bgColorAttr := (if (sc.conditionResult.getOrElse(false))
+                                       "#228B22;"
+                                      else
+                                       "#FF4500;"),
+                     td(sc.condition.toString),
+                     td(sc.checkValue.toString),
+                     td(sc.execResultValue.getOrElse(0).toString),
+                     td(sc.conditionResult.getOrElse(false).toString)
+                   )
+                 }
+               )
+             // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+           ))//,
            //tr(td("111111"),td("2222222")),
            //tr(td("111111"),td("2222222"))
          )

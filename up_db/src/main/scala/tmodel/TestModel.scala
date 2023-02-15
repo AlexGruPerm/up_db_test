@@ -42,13 +42,27 @@ sealed trait RetType
   }
 
 sealed trait SucCond
-  case object rows_gt extends SucCond
-  case object rows_lt extends SucCond
-  case object rows_eq extends SucCond
-  case object rows_ne extends SucCond
-  case object exec_time_ms  extends SucCond
-  case object fetch_time_ms extends SucCond
-  case object full_time_ms  extends SucCond
+  case object rows_gt extends SucCond{
+    override def toString: String = "rows >"
+  }
+  case object rows_lt extends SucCond{
+    override def toString: String = "rows <"
+  }
+  case object rows_eq extends SucCond{
+    override def toString: String = "rows ="
+  }
+  case object rows_ne extends SucCond{
+    override def toString: String = "rows <> "
+  }
+  case object exec_time_ms  extends SucCond{
+    override def toString: String = "Exec. time (ms.) < "
+  }
+  case object fetch_time_ms extends SucCond{
+    override def toString: String = "Fetch time (ms.) < "
+  }
+  case object full_time_ms  extends SucCond{
+    override def toString: String = "Full time (ms.) < "
+  }
   //case object no_exception extends SucCond("no_exception")
   //case object exception extends SucCond("exception")
 
