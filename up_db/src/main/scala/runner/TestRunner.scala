@@ -72,6 +72,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
   }
     testResult <- execDbCall
     _ <- ZIO.logInfo(s"test res = ${testResult}")
+    _ <- ZIO.logInfo(s"exec_select_function_cursor rowCount = ${testResult.rowCount}")
     _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
   } yield ()
 

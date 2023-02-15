@@ -43,11 +43,11 @@ object types {
      * with test's conditions (success_condition).
      */
     def checkConditions: TestInRepo = {
-      val checked_success_condition: Option[List[SucCondElement]] = {
+      val checked_success_conditions: Option[List[SucCondElement]] = {
         success_condition.map(lst => lst.map(sc => sc.check(testRes)))
       }
-      val newTestState: TestState = getState(checked_success_condition)
-      this.copy(success_condition = checked_success_condition,testState = newTestState)
+      val newTestState: TestState = getState(checked_success_conditions)
+      this.copy(success_condition = checked_success_conditions,testState = newTestState/*, testRes = testRes*/)
     }
 
 
