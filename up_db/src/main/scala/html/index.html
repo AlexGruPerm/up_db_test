@@ -11,15 +11,21 @@
         var checkedCommon;
         var checkedTestIdJson;
         var isTestsExecuting = 0;
-        var intervalTestsAgrState = setInterval(getTestsAgrInfo, 500);
-
-        function getTestsAgrInfo() {
-          const date = new Date();
-          document.getElementById("test_current_state").innerHTML = date.toLocaleTimeString();
-        }
+        var intervalTestsAgrState;
 
         function myStopFunction() {
+          console.log("STOP checking..............");
+          document.getElementById("div_timer").innerHTML = "";
           clearInterval(intervalTestsAgrState);
+        }
+
+        //document.getElementById("test_current_state").innerHTML = date.toLocaleTimeString();
+
+        function getTestsAgrInfo() {
+          if (isTestsExecuting == 1) {
+          const date = new Date();
+          document.getElementById("div_timer").innerHTML = date.toLocaleTimeString();
+          }
         }
 
         async function getTestInfo(testId) {
@@ -137,6 +143,7 @@
                responseStatus = response.status;
                    if (responseStatus == 400) {
                      console.log('-- error ----------------------------------------------');
+                     myStopFunction();
                      console.log('Response status = ',responseStatus);
                      responseText = await response.text();
                      console.log('Response text = ',responseText);
@@ -145,6 +152,7 @@
                      console.log('---------------------------------------------------------');
                      return response;
                    } else {
+                     myStopFunction();
                      resp_message.classList.remove('error_msg');
                      resp_message.innerHTML = "";
                      return response.json();
@@ -163,7 +171,9 @@
           checkedTestIdJson = JSON.parse(JSON.stringify(checkedCommon));
           console.log("checkedTestIdJson = ",checkedTestIdJson);
              if (checkedTestId.length) {
-             isTestsExecuting = 1;
+               console.log("STOP checking..............");
+               isTestsExecuting = 1;
+               intervalTestsAgrState = setInterval(getTestsAgrInfo, 200);
              }
              const resultJson = await startJsonTests();
              console.log('-- response -------------------------------- isTestsExecuting =',isTestsExecuting);
@@ -263,7 +273,8 @@ span:hover {
             <div id="resp_message"></div>
         </td>
         <td>
-          <div id="test_current_state">tests current state.</div>
+            <div id="div_timer"></div><br>
+            <div id="test_current_state">tests current state.</div>
         </td>
     </tr>
     <tr>
