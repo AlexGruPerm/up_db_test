@@ -20,14 +20,26 @@ import scala.annotation.nowarn
 */
 
 sealed trait CallType
-  case object procedure extends CallType
-  case object function extends CallType
-  case object select_function extends CallType
+  case object procedure extends CallType{
+    override def toString: String = "procedure"
+  }
+  case object function extends CallType{
+    override def toString: String = "function"
+  }
+  case object select_function extends CallType{
+    override def toString: String = "select_function"
+  }
 
 sealed trait RetType
-  case object cursor extends RetType
-  case object select_dataset extends RetType
-  case object integer_value extends RetType
+  case object cursor extends RetType{
+    override def toString: String = "cursor"
+  }
+  case object select_dataset extends RetType{
+    override def toString: String = "select_dataset"
+  }
+  case object integer_value extends RetType{
+    override def toString: String = "integer_value"
+  }
 
 sealed trait SucCond
   case object rows_gt extends SucCond

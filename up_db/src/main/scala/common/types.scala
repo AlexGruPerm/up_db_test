@@ -1,7 +1,7 @@
 package common
 
 import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, testStateFailure, testStateSuccess, testStateUndefined}
-import zio.http.html._
+import zio.http.html.{td, _}
 import zio.http.{Handler, Response}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
@@ -60,6 +60,13 @@ object types {
       div(
          table(
            borderAttr := "1px",
+           css := (if (testState == testStateFailure) {
+                     "test_state_failure" :: Nil
+                   } else if (testState == testStateSuccess) {
+                    "test_state_success" :: Nil
+                 } else {
+                    "test_state_undef" :: Nil
+                 }),
            idAttr := s"table_test_$id",
            tr(
              td(
@@ -69,16 +76,17 @@ object types {
                ),br()
              )
            ),
-           tr(td("111111"),td("2222222"))
-           /*,
-           tr(td()),
-           tr(td()),
-           tr(td()),
-           tr(td()),
-           tr(td()),
-           tr(td()),
-           tr(td())
-           */
+           tr(td("Call type :"),td(call_type.toString)),
+           tr(td("Return type :"),td(ret_type.toString)),
+           tr(td(colSpanAttr:= "2",div("Call :"))),
+           tr(td(colSpanAttr:= "2",call)),
+           tr(td(colSpanAttr:= "2","Success conditions:")),
+           tr(colSpanAttr:= "2",
+             //table with success conditions
+
+           ),
+           //tr(td("111111"),td("2222222")),
+           //tr(td("111111"),td("2222222"))
          )
       )
   }
