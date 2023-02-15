@@ -5,7 +5,7 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
 case class TestsStatus(total: Int, enabled: Int, disabled: Int, executed: Int, success: Int, failure: Int)
 
-case class checkTestRepoInfo(tests: List[(SessionId,TestsStatus)])
+case class checkTestRepoInfo(tests: TestsStatus)
 
 object EncDeccheckTestRepoDataImplicits {
 

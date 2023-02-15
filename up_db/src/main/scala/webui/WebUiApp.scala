@@ -43,11 +43,11 @@ object WebUiApp {
     } yield resp
 
   import data.EncDeccheckTestRepoDataImplicits._
-  def checkTestsRepo: ZIO[ImplTestsRepo, IOException, Response] =
+  def checkTestsRepo(sid: SessionId): ZIO[ImplTestsRepo, IOException, Response] =
     for {
       _ <- ZIO.logInfo("checkTestsRepo ")
       tr <- ZIO.service[ImplTestsRepo]
-      info <- tr.checkTestRepoData
+      info <- tr.checkTestRepoData(sid)
       resp <- ZIO.succeed(info match {
         case Some(i) => Response.json(i.toJson)
         case _ => Response.json(ResponseMessage("OK start tests").toJson)
@@ -170,7 +170,7 @@ object WebUiApp {
   val app: Http[ImplTestsRepo with PrometheusPublisher, Nothing, Request, Response] = Http.collectZIO[Request] {
      case Method.GET  -> !! / "test_info" / sid / testId => catchCover(getTestInfo(sid, testId.toInt))
      case Method.GET  -> !! / "main" => catchCover(getMainPage)
-     case Method.GET  -> !! / "check" => catchCover(checkTestsRepo)
+     case Method.GET  -> !! / "check" / sid => catchCover(checkTestsRepo(sid))
      case req@(Method.POST -> !! / "load_test") => catchCover(loadTests(req))
      case req@(Method.POST -> !! / "start_test") => catchCover(startTests(req))
   }

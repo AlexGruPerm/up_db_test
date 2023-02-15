@@ -25,7 +25,7 @@ trait TestsRepo {
   /**
    * Aggregated information for debug purpose
   */
-  def checkTestRepoData: UIO[Option[checkTestRepoInfo]]
+  def checkTestRepoData(sid: SessionId): UIO[Option[checkTestRepoInfo]]
 
   /**
    * Update one test in TestModelRepo, test must be with execution results - look TestExecutionResult
@@ -75,8 +75,21 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
   } yield tests
 
   //todo: eliminate v.tests.getOrElse(List[TestInRepo]())
-  def checkTestRepoData: UIO[Option[checkTestRepoInfo]] = for {
-    lst <- ref.get.map { m => m.map {
+  def checkTestRepoData(sid: SessionId): UIO[Option[checkTestRepoInfo]] = for {
+    tests <- lookup(sid)
+    res = tests.map{v =>
+      checkTestRepoInfo(TestsStatus(
+        v.tests.getOrElse(List[TestInRepo]()).size,
+        v.tests.getOrElse(List[TestInRepo]()).count(t => t.isEnabled),
+        v.tests.getOrElse(List[TestInRepo]()).count(t => !t.isEnabled),
+        v.tests.getOrElse(List[TestInRepo]()).count(t => t.isExecuted),
+        v.tests.getOrElse(List[TestInRepo]()).count(t => t.testState == testStateSuccess),
+        v.tests.getOrElse(List[TestInRepo]()).count(t => t.testState == testStateFailure)
+       ))
+      }
+    res <- ZIO.succeed(res)
+
+    /*    lst <- ref.get.map { m => m.map {
       case (k, v) =>
         (k,
           TestsStatus(
@@ -89,7 +102,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
             ))
      }(collection.breakOut).toList
     }
-   res <- ZIO.succeed(Some(checkTestRepoInfo(lst)))
+   res <- ZIO.succeed(Some(checkTestRepoInfo(lst)))*/
   } yield res
 
 
