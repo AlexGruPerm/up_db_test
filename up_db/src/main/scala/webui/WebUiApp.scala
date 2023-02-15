@@ -2,13 +2,14 @@ package webui
 
 
 import common.types.{SessionId, TestInRepo}
-import data.{ImplTestsRepo}
+import data.ImplTestsRepo
 import error.ResponseMessage
 import runner.{TestRunner, TestRunnerImpl}
 import tmodel.{RespTest, RespTestModel, Session, TestModel, TestsToRun}
 import zio.http._
 import zio.http.model.{Method, Status}
 import zio.json.{DecoderOps, EncoderOps}
+import zio.metrics.connectors.prometheus.PrometheusPublisher
 import zio.{Scope, ZIO, ZLayer}
 
 import java.io.IOException
@@ -166,14 +167,13 @@ object WebUiApp {
     }
 
   //todo: Everywhere common equal part - .catchAll, remove in function
-  val app: Http[ImplTestsRepo, Nothing, Request, Response] = Http.collectZIO[Request] {
+  val app: Http[ImplTestsRepo with PrometheusPublisher, Nothing, Request, Response] = Http.collectZIO[Request] {
      case Method.GET  -> !! / "test_info" / sid / testId => catchCover(getTestInfo(sid, testId.toInt))
      case Method.GET  -> !! / "main" => catchCover(getMainPage)
      case Method.GET  -> !! / "check" => catchCover(checkTestsRepo)
      case req@(Method.POST -> !! / "load_test") => catchCover(loadTests(req))
      case req@(Method.POST -> !! / "start_test") => catchCover(startTests(req))
   }
-
 
 }
 

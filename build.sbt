@@ -11,6 +11,7 @@ ThisBuild / scalaVersion := "2.12.15"
     val zio_json   = "0.3.0-RC11"
     val pgVers     = "42.5.3"
     val dbcp2Vers = "2.9.0"
+    val zio_metrics = "2.0.6"
   }
 
   // PROJECTS
@@ -42,7 +43,9 @@ ThisBuild / scalaVersion := "2.12.15"
       val zio_http = "dev.zio" %% "zio-http" % Versions.zio_http
       val zio_json = "dev.zio"       %% "zio-json"       % Versions.zio_json
 
-      val zioDep = List(zio, zio_conf,zio_conf_typesafe,zio_conf_magnolia, zio_http, zio_json )
+      val zio_metrics = "dev.zio" %% "zio-metrics-connectors" % Versions.zio_metrics
+
+      val zioDep = List(zio, zio_conf,zio_conf_typesafe,zio_conf_magnolia, zio_http, zio_json, zio_metrics )
 
       val pg = "org.postgresql" % "postgresql" % Versions.pgVers
       val dbcp2 = "org.apache.commons" % "commons-dbcp2" % Versions.dbcp2Vers

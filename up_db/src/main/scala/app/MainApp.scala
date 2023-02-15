@@ -11,6 +11,12 @@ import zio.{Config, ConfigProvider, Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 */
 object MainApp extends ZIOAppDefault{
 
+  /**
+   * http://localhost:8081/main
+   * http://localhost:8081/check
+   * http://localhost:8081/metrics
+  */
+
   val logic: ZIO[WebUiConfig with ImplTestsRepo,Throwable,Unit] =
     for {
       webuiConf <- ZIO.service[WebUiConfig]

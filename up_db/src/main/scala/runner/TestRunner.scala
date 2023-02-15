@@ -5,7 +5,8 @@ import data.ImplTestsRepo
 import db.{jdbcSession, jdbcSessionImpl, pgSess}
 import org.postgresql.jdbc.PgResultSet
 import tmodel.{TestsMeta, cursor, select_function}
-import zio.{ZIO, ZLayer}
+import zio.metrics.{Metric, MetricLabel}
+import zio.{UIO, ZIO, ZLayer}
 
 import java.sql.{ResultSet, SQLException}
 import scala.reflect.internal.ClassfileConstants.instanceof
@@ -83,12 +84,25 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     _ <- test.call_type match {
       case _: select_function.type =>
         test.ret_type match {
-          case _: cursor.type => exec_select_function_cursor(conn,test)
+          case _: cursor.type => exec_select_function_cursor(conn,test) @@
+            countAllRequests("select_function_cursor")
           case _ => ZIO.unit
         }
       case _ => ZIO.unit
     }
   } yield ()
+
+  private val execInRunCount = Metric.counterInt("call_exec_in_run").fromConst(1)
+
+  def getExecInRunCount: UIO[Double] = for {
+    c <- execInRunCount.value
+  } yield c.count
+
+  def countAllRequests(method: String) =
+    Metric.counterInt("count_all_exec").fromConst(1)
+      .tagged(
+        MetricLabel("method", method)
+      )
 
   def run: ZIO[Any, Exception, Unit] = for {
       testsSetOpt <- tr.lookup(sid)
@@ -97,7 +111,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
           ZIO.logInfo(s" Begin tests set execution for SID = $sid") *>
           ZIO.foreachDiscard(testsSet.tests.getOrElse(List[TestInRepo]()).filter(_.isEnabled == true)) {
             testId: TestInRepo =>
-              exec(testId).provide(ZLayer.succeed(testsSet.meta), jdbcSessionImpl.layer)
+              exec(testId).provide(ZLayer.succeed(testsSet.meta), jdbcSessionImpl.layer) @@ execInRunCount
           }//Here we can use catchAllDefect for catch errors for all tests in set.
         case None => ZIO.unit
       }
