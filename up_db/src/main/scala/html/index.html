@@ -19,12 +19,34 @@
           clearInterval(intervalTestsAgrState);
         }
 
-        //document.getElementById("test_current_state").innerHTML = date.toLocaleTimeString();
+        async function getTestsState() {
+             console.log('-- request tests state ---------------------------------------------- SID = ',globalSessionId);
+             const curr_state = document.getElementById("test_current_state");
+               const response = await fetch(`check/`+globalSessionId, {method: "GET"});
+               responseStatus = response.status;
+                   if (responseStatus == 400) {
+                     console.log('-- error ----------------------------------------------');
+                     console.log('Response status = ',responseStatus);
+                     responseText = await response.text();
+                     curr_state.className = 'error_msg';
+                     curr_state.innerHTML = `ERROR:<br/> ${JSON.parse(responseText).message}`;
+                     console.log('Response text = ',responseText);
+                     console.log('---------------------------------------------------------');
+                   } else {
+                     curr_state.classList.remove('error_msg');
+                     curr_state.innerHTML = "";
+                     responseText = await response.text();
+                     curr_state.innerHTML = responseText;
+                   }
+                   return response;
+        }
+
 
         function getTestsAgrInfo() {
           if (isTestsExecuting == 1) {
           const date = new Date();
           document.getElementById("div_timer").innerHTML = date.toLocaleTimeString();
+          getTestsState();
           }
         }
 
@@ -163,6 +185,8 @@
           console.log('-- start tests -------------------- isTestsExecuting=',isTestsExecuting);
           const pre_json = document.getElementById("json_test_info");
           pre_json.innerHTML = "";
+          const curr_state = document.getElementById("test_current_state");
+          curr_state.innerHTML = "";
           const tests_container = document.getElementById("test_list");
           checkedTestId = Array.from(tests_container.querySelectorAll("input[type=checkbox]:checked"))
             .map((elem) => parseInt(elem.id.replace("test_","")));
@@ -171,7 +195,7 @@
           checkedTestIdJson = JSON.parse(JSON.stringify(checkedCommon));
           console.log("checkedTestIdJson = ",checkedTestIdJson);
              if (checkedTestId.length) {
-               console.log("STOP checking..............");
+               console.log("START checking..............");
                isTestsExecuting = 1;
                intervalTestsAgrState = setInterval(getTestsAgrInfo, 200);
              }
