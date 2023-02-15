@@ -56,9 +56,11 @@ object types {
     //  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean])
     //  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int, errMsg: Option[String] = None)
 
-    def getTestAsHtml: Html = div(s"[$id] $name") //.attr("id","div_1")
-    /*        div(
+    def getTestAsHtml: Html = div(s"[$id] $name")
+      div(
          table(
+           //styleAttr("border" => "1px"),
+           //css := "container" :: "text-align-left" :: Nil,
            tr(
              td(
                div(
@@ -66,16 +68,16 @@ object types {
                ),br()
              )
            ),
-           tr(),
-           tr(),
-           tr(),
-           tr(),
-           tr(),
-           tr(),
-           tr(),
-           tr()
+           tr(td()),
+           tr(td()),
+           tr(td()),
+           tr(td()),
+           tr(td()),
+           tr(td()),
+           tr(td()),
+           tr(td())
          )
-      )*/
+      )
   }
 
   case class TestModelRepo( meta: TestsMeta, tests: Option[List[TestInRepo]])

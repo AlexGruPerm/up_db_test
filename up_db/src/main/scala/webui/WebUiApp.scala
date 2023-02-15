@@ -68,8 +68,8 @@ object WebUiApp {
       resp = (tests match {
         case Some(testsList) => testsList.find(_.id == testId) match {
           case Some(thisTest) =>
-            //Response.html(thisTest.getTestAsHtml, Status.Ok)
-             Response.json(thisTest.toJson)
+            Response.html(thisTest.getTestAsHtml, Status.Ok)
+            //Response.json(thisTest.toJson)
           case None => Response.json(ResponseMessage(s"Test [$testId] not found in repo.").toJson)
             .setStatus(Status.BadRequest)
         }

@@ -15,8 +15,28 @@
 
         function myStopFunction() {
           console.log("STOP checking..............");
-          document.getElementById("div_timer").innerHTML = "";
           clearInterval(intervalTestsAgrState);
+        }
+
+        function checkSuccessTest(testId){
+          const divTests = document.querySelector(`div[id="test_list"]`);
+          const checkBox = divTests.querySelectorAll(`span[id="test_${testId}"]`)[0];
+          checkBox.classList.value = "";
+          checkBox.className = 'test_state_success';
+        }
+
+        function setSpansUndefined(){
+          const divTests = document.querySelector(`div[id="test_list"]`);
+          const checkBox = divTests.querySelectorAll(`span[id^=test]`);
+          Array.from(checkBox).map(elm => elm.classList.value = "");
+          Array.from(checkBox).map(elm => elm.className = "test_state_undef");
+        }
+
+        function checkFailTest(testId){
+          const divTests = document.querySelector(`div[id="test_list"]`);
+          const checkBox = divTests.querySelectorAll(`span[id="test_${testId}"]`)[0];
+          checkBox.classList.value = "";
+          checkBox.className = 'test_state_failure';
         }
 
         async function getTestsState() {
@@ -55,6 +75,14 @@
                      curr_state.innerHTML += `<div>failure : ${t_failure} </div>`;
                      curr_state.innerHTML += `<div>percent : ${t_percent} </div>`;
 
+                       console.log("success array - ",response_json.tests.successList);
+                       response_json.tests.successList.map(
+                         succElem => checkSuccessTest(succElem)//console.log(succElem)
+                       );
+                       response_json.tests.failureList.map(
+                         succElem => checkFailTest(succElem)//console.log(succElem)
+                       );
+
                      curr_state.classList.remove('test_state_undef');
                        if (t_executed < t_enabled) {
                          curr_state.className = 'test_state_executing';
@@ -66,6 +94,7 @@
                          curr_state.className = 'test_state_failure';
                          console.log('set class - test_state_failure ');
                        }
+
                    }
                    return response;
         }
@@ -73,8 +102,6 @@
 
         function getTestsAgrInfo() {
           if (isTestsExecuting == 1) {
-          const date = new Date();
-          document.getElementById("div_timer").innerHTML = date.toLocaleTimeString();
           getTestsState();
           }
         }
@@ -181,6 +208,8 @@
              console.log('-- request ----------------------------------------------');
              console.log(checkedTestIdJson);
              console.log('---------------------------------------------------------');
+             setSpansUndefined();
+
                const response = await fetch(`start_test`, {
                     method: "POST",
                     headers: {
@@ -243,7 +272,7 @@
              .map((elem) => elem.checked = true)
         }
 
-        function btnUnelectAll(){
+        function btnUnselectAll(){
           console.log('unselect all tests');
           const tests_container = document.getElementById("test_list");
           Array.from(tests_container.querySelectorAll("input[type=checkbox]"))
@@ -327,18 +356,17 @@ span:hover {
             <div id="btn_upload_test_file" onclick="btnUploadTestFile()"  class="label">send json file</div>
                 <div class="sel-button-container">
                     <div id="btn_select_all" onclick="btnSelectAll()" class="select_label">Select all</div>
-                    <div id="btn_unselect_all" onclick="btnUnelectAll()" class="select_label">Unselect all</div>
+                    <div id="btn_unselect_all" onclick="btnUnselectAll()" class="select_label">Unselect all</div>
                     <div id="btn_start_tests" onclick="btnStartTests()" class="select_label">Start tests</div>
                 </div><br>
             <div id="resp_message"></div>
         </td>
         <td>
-            <div id="div_timer"></div><br>
             <div id="test_current_state" class="test_state_undef">tests current state.</div>
         </td>
     </tr>
     <tr>
-        <td height="600px" >
+        <td height="750px" >
             <div id="test_list" class="test_container"></div>
         </td>
         <td>
