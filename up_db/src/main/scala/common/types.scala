@@ -56,19 +56,21 @@ object types {
     //  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean])
     //  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int, errMsg: Option[String] = None)
 
-    def getTestAsHtml: Html = div(s"[$id] $name")
+    def getTestAsHtml: Html = //div(s"[$id] $name")
       div(
          table(
-           //styleAttr("border" => "1px"),
-           //css := "container" :: "text-align-left" :: Nil,
+           borderAttr := "1px",
+           idAttr := s"table_test_$id",
            tr(
              td(
+               colSpanAttr:= "2",
                div(
                  s"[$id] $name"
                ),br()
              )
            ),
-           tr(td()),
+           tr(td("111111"),td("2222222"))
+           /*,
            tr(td()),
            tr(td()),
            tr(td()),
@@ -76,6 +78,7 @@ object types {
            tr(td()),
            tr(td()),
            tr(td())
+           */
          )
       )
   }
