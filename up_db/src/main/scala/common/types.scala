@@ -59,7 +59,7 @@ object types {
     def getTestAsHtml: Html = //div(s"[$id] $name")
       div(
          table(
-           borderAttr := "1px",
+           borderAttr := "1px solid black",
            css := (if (testState == testStateFailure)
                      "test_state_failure" :: Nil
                    else if (testState == testStateSuccess)
