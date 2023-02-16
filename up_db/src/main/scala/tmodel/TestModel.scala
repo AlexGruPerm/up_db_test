@@ -78,19 +78,19 @@ sealed trait TestState
   execResultValue: row count, scalar value (Int,String,....), is_exception = 0,1, execution_Time
   */
   //todo: late change Int to Long
-  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean]){
+  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Long], conditionResult: Option[Boolean]){
     def check(testRes: TestExecutionResult):SucCondElement = {
-      val execResultValue: Boolean =
+      val (checkConditionRes,testResVal): (Boolean,Option[Long]) =
         condition match {
-        case _:rows_gt.type => checkValue < testRes.rowCount
-        case _:rows_lt.type => checkValue > testRes.rowCount
-        case _:rows_eq.type => checkValue == testRes.rowCount
-        case _:rows_ne.type => checkValue != testRes.rowCount
-        case _:exec_time_ms.type  => testRes.execMs <= checkValue
-        case _:fetch_time_ms.type => testRes.fetchMs <= checkValue
-        case _:full_time_ms.type  => testRes.totalMs <= checkValue
+        case _:rows_gt.type => (checkValue < testRes.rowCount,Some(testRes.rowCount))
+        case _:rows_lt.type => (checkValue > testRes.rowCount,Some(testRes.rowCount))
+        case _:rows_eq.type => (checkValue == testRes.rowCount,Some(testRes.rowCount))
+        case _:rows_ne.type => (checkValue != testRes.rowCount,Some(testRes.rowCount))
+        case _:exec_time_ms.type  => (testRes.execMs <= checkValue,Some(testRes.execMs))
+        case _:fetch_time_ms.type => (testRes.fetchMs <= checkValue,Some(testRes.fetchMs))
+        case _:full_time_ms.type  => (testRes.totalMs <= checkValue,Some(testRes.totalMs))
         }
-      this.copy(conditionResult = Some(execResultValue)) //todo: FIX !!!
+      this.copy(execResultValue = testResVal, conditionResult = Some(checkConditionRes))
     }
 
     /**

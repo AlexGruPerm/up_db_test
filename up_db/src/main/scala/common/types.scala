@@ -47,7 +47,7 @@ object types {
         success_condition.map(lst => lst.map(sc => sc.check(testRes)))
       }
       val newTestState: TestState = getState(checked_success_conditions)
-      this.copy(success_condition = checked_success_conditions,testState = newTestState/*, testRes = testRes*/)
+      this.copy(success_condition = checked_success_conditions,testState = newTestState, testRes = this.testRes)
     }
 
 
@@ -87,9 +87,9 @@ object types {
                  borderAttr := "1px",
                  idAttr := s"table_test_conditions_$id",
                  tr(
+                   td("Exec value"),
                    td("Condition"),
                    td("Check value"),
-                   td("Exec value"),
                    td("Result")
                  ),
                  success_condition.getOrElse(List[SucCondElement]()).map {sc =>
@@ -97,9 +97,9 @@ object types {
                                        "#228B22;"
                                       else
                                        "#FF4500;"),
+                     td(sc.execResultValue.getOrElse(0).toString),
                      td(sc.condition.toString),
                      td(sc.checkValue.toString),
-                     td(sc.execResultValue.getOrElse(0).toString),
                      td(sc.conditionResult.getOrElse(false).toString)
                    )
                  }
