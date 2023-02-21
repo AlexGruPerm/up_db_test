@@ -79,6 +79,7 @@ sealed trait TestState
   */
   //todo: late change Int to Long
   case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Long], conditionResult: Option[Boolean]){
+
     def check(testRes: TestExecutionResult):SucCondElement = {
       val (checkConditionRes,testResVal): (Boolean,Option[Long]) =
         condition match {
