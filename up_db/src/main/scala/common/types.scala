@@ -1,6 +1,6 @@
 package common
 
-import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, testStateFailure, testStateSuccess, testStateUndefined}
+import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, fields_exists, testStateFailure, testStateSuccess, testStateUndefined}
 import zio.http.html.{td, _}
 import zio.http.{Handler, Response}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
@@ -97,9 +97,20 @@ object types {
                                        "#228B22;"
                                       else
                                        "#FF4500;"),
-                     td(sc.execResultValue.getOrElse(0).toString),
+                     td(
+                       sc.condition match {
+                         case _:fields_exists.type => testRes.cols.map(_._1).mkString("</br>")
+                         case _ => sc.execResultValue.getOrElse(0).toString
+                       }
+
+                     ),
                      td(sc.condition.toString),
-                     td(sc.checkValue.toString),
+                     td(
+                       sc.condition match {
+                         case _:fields_exists.type => sc.fields.getOrElse(List[String]()).mkString("</br>")
+                         case _ => sc.checkValue.toString
+                       }
+                     ),
                      td(sc.conditionResult.getOrElse(false).toString)
                    )
                  }

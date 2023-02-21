@@ -63,6 +63,9 @@ sealed trait SucCond
   case object full_time_ms  extends SucCond{
     override def toString: String = "Full time (ms.) < "
   }
+  case object fields_exists  extends SucCond{
+    override def toString: String = "fileds exists "
+  }
   //case object no_exception extends SucCond("no_exception")
   //case object exception extends SucCond("exception")
 
@@ -78,18 +81,20 @@ sealed trait TestState
   execResultValue: row count, scalar value (Int,String,....), is_exception = 0,1, execution_Time
   */
   //todo: late change Int to Long
-  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Long], conditionResult: Option[Boolean]){
+  case class SucCondElement(condition: SucCond, checkValue: Option[Int], fields: Option[List[String]], execResultValue: Option[Long], conditionResult: Option[Boolean]){
 
     def check(testRes: TestExecutionResult):SucCondElement = {
       val (checkConditionRes,testResVal): (Boolean,Option[Long]) =
         condition match {
-        case _:rows_gt.type => (checkValue < testRes.rowCount,Some(testRes.rowCount))
-        case _:rows_lt.type => (checkValue > testRes.rowCount,Some(testRes.rowCount))
-        case _:rows_eq.type => (checkValue == testRes.rowCount,Some(testRes.rowCount))
-        case _:rows_ne.type => (checkValue != testRes.rowCount,Some(testRes.rowCount))
-        case _:exec_time_ms.type  => (testRes.execMs <= checkValue,Some(testRes.execMs))
-        case _:fetch_time_ms.type => (testRes.fetchMs <= checkValue,Some(testRes.fetchMs))
-        case _:full_time_ms.type  => (testRes.totalMs <= checkValue,Some(testRes.totalMs))
+        case _:rows_gt.type => (checkValue.getOrElse(0) < testRes.rowCount,Some(testRes.rowCount))
+        case _:rows_lt.type => (checkValue.getOrElse(0) > testRes.rowCount,Some(testRes.rowCount))
+        case _:rows_eq.type => (checkValue.getOrElse(0) == testRes.rowCount,Some(testRes.rowCount))
+        case _:rows_ne.type => (checkValue.getOrElse(0) != testRes.rowCount,Some(testRes.rowCount))
+        case _:exec_time_ms.type  => (testRes.execMs <= checkValue.getOrElse(0),Some(testRes.execMs))
+        case _:fetch_time_ms.type => (testRes.fetchMs <= checkValue.getOrElse(0),Some(testRes.fetchMs))
+        case _:full_time_ms.type  => (testRes.totalMs <= checkValue.getOrElse(0),Some(testRes.totalMs))
+        // ._1 - column name, _.2 - column type
+        case _:fields_exists.type  => (fields.getOrElse(List[String]()).forall(testRes.cols.map(cls => cls._1).contains),Some(1))
         }
       this.copy(execResultValue = testResVal, conditionResult = Some(checkConditionRes))
     }
@@ -159,6 +164,7 @@ sealed trait TestState
       case "exec_time_ms" => exec_time_ms
       case "fetch_time_ms" => fetch_time_ms
       case "full_time_ms" => full_time_ms
+      case "fields_exists" => fields_exists
       case anyValue => throw new Exception(s"Invalid value in field inside success_condition = $anyValue")
     }
 
