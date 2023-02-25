@@ -29,6 +29,9 @@ sealed trait CallType
   case object select_function extends CallType{
     override def toString: String = "select_function"
   }
+  case object func_inout_cursor extends CallType{
+    override def toString: String = "func_inout_cursor"
+  }
 
 sealed trait RetType
   case object cursor extends RetType{
@@ -144,6 +147,7 @@ sealed trait TestState
       case "procedure" => procedure
       case "function" => function
       case "select_function" => select_function
+      case "func_inout_cursor" => func_inout_cursor
       case anyValue => throw new Exception(s"Invalid value in field call_type = $anyValue")
     }
 

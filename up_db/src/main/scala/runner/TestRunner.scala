@@ -4,7 +4,7 @@ import common.types.{SessionId, TestExecutionResult, TestInRepo}
 import data.ImplTestsRepo
 import db.{jdbcSession, jdbcSessionImpl, pgSess}
 import org.postgresql.jdbc.PgResultSet
-import tmodel.{TestsMeta, cursor, select_function}
+import tmodel.{TestsMeta, cursor, func_inout_cursor, select_function}
 import zio.metrics.{Metric, MetricLabel}
 import zio.{UIO, ZIO, ZLayer}
 
@@ -25,6 +25,57 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
   private def updateTestWithResult(test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- tr.updateTestWithResults(sid, test.checkConditions)
   } yield ()
+
+  import java.sql.Types
+  private def exec_func_inout_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
+    _ <- ZIO.unit
+    connection = pgses.sess
+    execDbCall: ZIO[Any,Nothing,TestExecutionResult] = ZIO.attemptBlocking {
+      val tBegin = System.currentTimeMillis
+      connection.commit() //todo: remove it !?
+      connection.setAutoCommit(false) //todo: remove it !?
+      val stmt = connection.prepareStatement(test.call)
+      val tExec = System.currentTimeMillis
+      val rs: ResultSet = stmt.executeQuery()
+      val res: TestExecutionResult = {
+        if (!rs.next())
+        //throw new SQLException("! there were no rows.")
+          TestExecutionResult()//0L, 0L, tExec - tBegin, List[(String, String)](), 0)
+
+        val v = rs.getObject(1);
+        val pgrs = v.asInstanceOf[PgResultSet]
+        val columns: IndexedSeq[(String, String)] = (1 to pgrs.getMetaData.getColumnCount)
+          .map(cnum => (pgrs.getMetaData.getColumnName(cnum), pgrs.getMetaData.getColumnTypeName(cnum)))
+        // resultsCur.size - internally iterate Iterator to the end.
+        val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map {
+          rs => columns.map(cname => rs.getString(cname._1))
+        }
+        val results: List[IndexedSeq[String]] = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
+        val tFetch = System.currentTimeMillis
+        rs.close()
+        val rowsCnt = results.size
+
+        /*      todo: If test condition related with data in dataset we can use fetched results as List of rows.
+                println(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+                results.foreach(println)
+                println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")*/
+        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, columns.toList, rowsCnt)
+      }
+      stmt.close()
+      res
+    }.catchAll {
+      case e: Exception => ZIO.logError(s" Exception exec_select_function_cursor msg=${e.getMessage} don't fail")
+        .as(TestExecutionResult(e.getMessage)) //*> //todo: maybe remove here
+      //todo: if we onpen it here anr run nultiple test and if one test fail, execution will stoped and error text send to client correctly.
+      //todo: use it for whole tests set execution
+      //ZIO.fail(throw new Exception(s"Exception for test.id = [${test.id}] with message ${e.getMessage}"))
+    }
+    testResult <- execDbCall
+    _ <- ZIO.logInfo(s"test res = ${testResult}")
+    _ <- ZIO.logInfo(s"exec_select_function_cursor rowCount = ${testResult.rowCount}")
+    _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
+  } yield ()
+
 
   import java.sql.Types
   private def exec_select_function_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
@@ -87,6 +138,12 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
         test.ret_type match {
           case _: cursor.type => exec_select_function_cursor(conn,test) @@
             countAllRequests("select_function_cursor")
+          case _ => ZIO.unit
+        }
+      case _: func_inout_cursor.type =>
+        test.ret_type match {
+          case _: cursor.type => exec_func_inout_cursor(conn,test) @@
+            countAllRequests("func_inout_cursor")
           case _ => ZIO.unit
         }
       case _ => ZIO.unit
