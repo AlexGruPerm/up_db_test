@@ -31,13 +31,13 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: ZIO[Any,Nothing,TestExecutionResult] = ZIO.attemptBlocking {
-      val tBegin = System.currentTimeMillis
       connection.commit()
       connection.setAutoCommit(false)
       val procCallText = s"{call ${test.call} }"
       val stmt = connection.prepareCall(procCallText);
       stmt.setNull(1, Types.OTHER)
       stmt.registerOutParameter(1, Types.OTHER)
+      val tBegin = System.currentTimeMillis
       stmt.execute()
       val tExec = System.currentTimeMillis
       val v = stmt.getObject(1)
@@ -79,12 +79,12 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: ZIO[Any,Nothing,TestExecutionResult] = ZIO.attemptBlocking {
-      val tBegin = System.currentTimeMillis
       connection.commit() //todo: remove it !?
       connection.setAutoCommit(false) //todo: remove it !?
       val stmt = connection.prepareStatement(test.call)
-      val tExec = System.currentTimeMillis
+      val tBegin = System.currentTimeMillis
       val rs: ResultSet = stmt.executeQuery()
+      val tExec = System.currentTimeMillis
       val res: TestExecutionResult = {
         if (!rs.next())
           TestExecutionResult()
