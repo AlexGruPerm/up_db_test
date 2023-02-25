@@ -32,39 +32,36 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     connection = pgses.sess
     execDbCall: ZIO[Any,Nothing,TestExecutionResult] = ZIO.attemptBlocking {
       val tBegin = System.currentTimeMillis
-      connection.commit() //todo: remove it !?
-      connection.setAutoCommit(false) //todo: remove it !?
-      val stmt = connection.prepareStatement(test.call)
+      connection.commit()
+      connection.setAutoCommit(false)
+      val procCallText = s"{call ${test.call} }"
+      val stmt = connection.prepareCall(procCallText);
+      stmt.setNull(1, Types.OTHER)
+      stmt.registerOutParameter(1, Types.OTHER)
+      stmt.execute()
       val tExec = System.currentTimeMillis
-      val rs: ResultSet = stmt.executeQuery()
-      val res: TestExecutionResult = {
-        if (!rs.next())
-        //throw new SQLException("! there were no rows.")
-          TestExecutionResult()//0L, 0L, tExec - tBegin, List[(String, String)](), 0)
+      val v = stmt.getObject(1)
+      val pgrs : PgResultSet = v.asInstanceOf[PgResultSet]
 
-        val v = rs.getObject(1);
-        val pgrs = v.asInstanceOf[PgResultSet]
+      val res: TestExecutionResult = {
         val columns: IndexedSeq[(String, String)] = (1 to pgrs.getMetaData.getColumnCount)
           .map(cnum => (pgrs.getMetaData.getColumnName(cnum), pgrs.getMetaData.getColumnTypeName(cnum)))
-        // resultsCur.size - internally iterate Iterator to the end.
+        if (!pgrs.next())
+          TestExecutionResult()
+
         val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map {
           rs => columns.map(cname => rs.getString(cname._1))
         }
         val results: List[IndexedSeq[String]] = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
         val tFetch = System.currentTimeMillis
-        rs.close()
+        pgrs.close()
         val rowsCnt = results.size
-
-        /*      todo: If test condition related with data in dataset we can use fetched results as List of rows.
-                println(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                results.foreach(println)
-                println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")*/
         TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, columns.toList, rowsCnt)
       }
       stmt.close()
       res
     }.catchAll {
-      case e: Exception => ZIO.logError(s" Exception exec_select_function_cursor msg=${e.getMessage} don't fail")
+      case e: Exception => ZIO.logError(s" Exception exec_func_inout_cursor msg=${e.getMessage} don't fail")
         .as(TestExecutionResult(e.getMessage)) //*> //todo: maybe remove here
       //todo: if we onpen it here anr run nultiple test and if one test fail, execution will stoped and error text send to client correctly.
       //todo: use it for whole tests set execution
@@ -90,14 +87,13 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
       val rs: ResultSet = stmt.executeQuery()
       val res: TestExecutionResult = {
         if (!rs.next())
-        //throw new SQLException("! there were no rows.")
-          TestExecutionResult()//0L, 0L, tExec - tBegin, List[(String, String)](), 0)
+          TestExecutionResult()
 
         val v = rs.getObject(1);
         val pgrs = v.asInstanceOf[PgResultSet]
         val columns: IndexedSeq[(String, String)] = (1 to pgrs.getMetaData.getColumnCount)
           .map(cnum => (pgrs.getMetaData.getColumnName(cnum), pgrs.getMetaData.getColumnTypeName(cnum)))
-        // resultsCur.size - internally iterate Iterator to the end.
+
         val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map {
           rs => columns.map(cname => rs.getString(cname._1))
         }

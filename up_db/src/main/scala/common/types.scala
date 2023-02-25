@@ -5,6 +5,8 @@ import zio.http.html.{td, _}
 import zio.http.{Handler, Response}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
+import scala.::
+
 object types {
   type SessionId = String
 
@@ -56,7 +58,7 @@ object types {
     //  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean])
     //  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int, errMsg: Option[String] = None)
 
-    def getTestAsHtml: Html = //div(s"[$id] $name")
+    def getTestAsHtml: Html =
       div(
          table(
            borderAttr := "1px solid black",
@@ -67,6 +69,24 @@ object types {
                    else
                      "test_state_undef" :: Nil),
            idAttr := s"table_test_$id",
+           testRes.errMsg match {
+             case Some(errMsg) =>
+               tr(bgColorAttr := "#FF4500;",
+               td(
+                 colSpanAttr:= "2",
+                 div(errMsg)
+               ))
+             case None => br()
+           },
+           testRes.errMsg match {
+             case Some(_) =>
+               tr(bgColorAttr := "#FF4500;",
+                 td(
+                   colSpanAttr:= "2",
+                   div(call)
+                 ))
+             case None => br()
+           },
            tr(
              td(
                colSpanAttr:= "2",
