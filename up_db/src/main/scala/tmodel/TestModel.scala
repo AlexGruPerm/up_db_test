@@ -20,8 +20,8 @@ import scala.annotation.nowarn
 */
 
 sealed trait CallType
-  case object procedure extends CallType{
-    override def toString: String = "procedure"
+  case object select extends CallType{
+    override def toString: String = "select"
   }
   case object function extends CallType{
     override def toString: String = "function"
@@ -37,8 +37,8 @@ sealed trait RetType
   case object cursor extends RetType{
     override def toString: String = "cursor"
   }
-  case object select_dataset extends RetType{
-    override def toString: String = "select_dataset"
+  case object dataset extends RetType{
+    override def toString: String = "dataset"
   }
   case object integer_value extends RetType{
     override def toString: String = "integer_value"
@@ -144,7 +144,7 @@ sealed trait TestState
 
     implicit val encoderCallType: JsonEncoder[CallType] = DeriveJsonEncoder.gen[CallType]
     implicit val decoder: JsonDecoder[CallType] = JsonDecoder[String].map {
-      case "procedure" => procedure
+      case "select" => select
       case "function" => function
       case "select_function" => select_function
       case "func_inout_cursor" => func_inout_cursor
@@ -154,7 +154,7 @@ sealed trait TestState
     implicit val encoderRetType: JsonEncoder[RetType] = DeriveJsonEncoder.gen[RetType]
     implicit val decoderRetType: JsonDecoder[RetType] = JsonDecoder[String].map {
       case "cursor" => cursor
-      case "select_dataset" => select_dataset
+      case "dataset" => dataset
       case "integer_value" => integer_value
       case anyValue => throw new Exception(s"Invalid value in field ret_type = $anyValue")
     }

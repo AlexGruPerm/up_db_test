@@ -85,23 +85,26 @@ object WebUiApp {
   def loadTests(req: Request): ZIO[ImplTestsRepo, Exception, Response] =
     for {
       tr <- ZIO.service[ImplTestsRepo]
-      /*      bodyAsStr <- req.body.asString
+/*      bodyAsStr <- req.body.asString.catchAll{
+        case e: Exception => ZIO.logError(s"updb-0 error parsing input file with tests : ${e.getMessage}") *>
+          ZIO.succeed("{}")
+      }
       _ <- ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~") *>
         ZIO.logInfo(s"bodyAsStr = $bodyAsStr") *>
         ZIO.logInfo(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")*/
 
       u <- req.body.asString.map(_.fromJson[TestModel])
         .catchAllDefect{
-          case e: Exception => ZIO.logError(s" error parsing input file with tests : ${e.getMessage}") *>
+          case e: Exception => ZIO.logError(s"updb-1 error parsing input file with tests : ${e.getMessage}") *>
             ZIO.succeed(Left(e.getMessage))
         }
         .catchAll{
-          case e: Exception => /*ZIO.logError(s" error 1 - ${e.getMessage}") *>*/
+          case e: Exception => ZIO.logError(s"updb-2 error parsing input file with tests : ${e.getMessage}") *>
             ZIO.succeed(Left(e.getMessage))
         }
 
       resp <- u match {
-        case Left(exp_str) => /*ZIO.logError(s" error 2 - ${exp_str}") *>*/ ZioResponseMsgBadRequest(exp_str)
+        case Left(exp_str) =>  ZioResponseMsgBadRequest(exp_str)
         case Right(testsWithMeta) =>
           tr.create(testsWithMeta).flatMap { sid =>
             ZIO.logInfo(s"SID = $sid") *>
@@ -113,7 +116,8 @@ object WebUiApp {
                   ).toJson)
               }
           }.foldZIO(
-            error   => /*ZIO.logError(s" error 3 - ${error.getMessage}") *>*/ ZioResponseMsgBadRequest(error.getMessage),
+            error   => ZIO.logError(s"updb-3 error parsing input file with tests : ${error.getMessage}") *>
+              ZioResponseMsgBadRequest(error.getMessage),
             success => ZIO.succeed(success)
           )
       }
