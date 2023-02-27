@@ -6,7 +6,7 @@ import db.{jdbcSession, jdbcSessionImpl, pgSess}
 import org.postgresql.jdbc.PgResultSet
 import tmodel.{TestsMeta, cursor, dataset, func_inout_cursor, select, select_function}
 import zio.metrics.{Metric, MetricLabel}
-import zio.{UIO, ZIO, ZLayer}
+import zio.{Task, UIO, ZIO, ZLayer}
 
 import java.sql.{ResultSet, SQLException}
 import scala.reflect.internal.ClassfileConstants.instanceof
@@ -35,19 +35,27 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
   private def columnsRows[A <: ResultSet](rs: A): (Columns,ListRows) ={
     val columns: IndexedSeq[(String, String)] = (1 to rs.getMetaData.getColumnCount)
       .map(cnum => (rs.getMetaData.getColumnName(cnum), rs.getMetaData.getColumnTypeName(cnum)))
-
     val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(rs).takeWhile(_.next()).map {
       rs => columns.map(cname => rs.getString(cname._1))
     }
     val results: List[IndexedSeq[String]] = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
+    rs.close()
     (columns,results)
   }
+
+
+  private def execCallUpdateTestInRepo(dbCall: UIO[TestExecutionResult], test: TestInRepo): ZIO[Any,Exception,Unit] = for {
+    testResult <- dbCall
+    //_ <- ZIO.logInfo(s"test res = ${testResult}")
+    //_ <- ZIO.logInfo(s"exec_select_function_cursor rowCount = ${testResult.rowCount}")
+    _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
+  } yield ()
 
 
   private def exec_func_inout_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
-    execDbCall: ZIO[Any,Nothing,TestExecutionResult] = ZIO.attemptBlocking {
+    execDbCall: UIO[TestExecutionResult] = ZIO.attemptBlocking {
       connection.commit()
       connection.setAutoCommit(false)
       val procCallText = s"{call ${test.call} }"
@@ -57,35 +65,24 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
       val tBegin = System.currentTimeMillis
       stmt.execute()
       val tExec = System.currentTimeMillis
-      val v = stmt.getObject(1)
-      val pgrs : PgResultSet = v.asInstanceOf[PgResultSet]
-
+      val pgrs = stmt.getObject(1).asInstanceOf[PgResultSet]
       val res: TestExecutionResult = {
         val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
-        pgrs.close()
-        val rowsCnt = rows.size
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rowsCnt)
+        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rows.size)
       }
       stmt.close()
       res
     }.catchAll {
-      case e: Exception => ZIO.logError(s" Exception exec_func_inout_cursor msg=${e.getMessage} don't fail")
-        .as(TestExecutionResult(e.getMessage)) //*> //todo: maybe remove here
-      //todo: if we onpen it here anr run nultiple test and if one test fail, execution will stoped and error text send to client correctly.
-      //todo: use it for whole tests set execution
-      //ZIO.fail(throw new Exception(s"Exception for test.id = [${test.id}] with message ${e.getMessage}"))
+      case e: Exception => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getMessage))
     }
-    testResult <- execDbCall
-    _ <- ZIO.logInfo(s"test res = ${testResult}")
-    _ <- ZIO.logInfo(s"exec_select_function_cursor rowCount = ${testResult.rowCount}")
-    _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
+    _ <- execCallUpdateTestInRepo(execDbCall,test)
   } yield ()
 
   private def exec_select_dataset(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
-    execDbCall: ZIO[Any,Nothing,TestExecutionResult] = ZIO.attemptBlocking {
+    execDbCall: UIO[TestExecutionResult] = ZIO.attemptBlocking {
       connection.commit() //todo: remove it !?
       connection.setAutoCommit(false) //todo: remove it !?
       val stmt = connection.createStatement()
@@ -95,64 +92,40 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
       val res: TestExecutionResult = {
         val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
-        pgrs.close()
-        val rowsCnt = rows.size
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rowsCnt)
+        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rows.size)
       }
       stmt.close()
       res
     }.catchAll {
-      case e: Exception => ZIO.logError(s" Exception exec_select_dataset msg=${e.getMessage} don't fail")
-        .as(TestExecutionResult(e.getMessage)) //*> //todo: maybe remove here
-      //todo: if we onpen it here anr run nultiple test and if one test fail, execution will stoped and error text send to client correctly.
-      //todo: use it for whole tests set execution
-      //ZIO.fail(throw new Exception(s"Exception for test.id = [${test.id}] with message ${e.getMessage}"))
+      case e: Exception => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getMessage))
     }
-    testResult <- execDbCall
-    _ <- ZIO.logInfo(s"test res = ${testResult}")
-    _ <- ZIO.logInfo(s"exec_select_dataset rowCount = ${testResult.rowCount}")
-    _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
+    _ <- execCallUpdateTestInRepo(execDbCall,test)
   } yield ()
 
   private def exec_select_function_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
-    execDbCall: ZIO[Any,Nothing,TestExecutionResult] = ZIO.attemptBlocking {
+    execDbCall: UIO[TestExecutionResult] = ZIO.attemptBlocking {
       connection.commit() //todo: remove it !?
       connection.setAutoCommit(false) //todo: remove it !?
       val stmt = connection.prepareStatement(test.call)
       val tBegin = System.currentTimeMillis
       val rs: ResultSet = stmt.executeQuery()
       val tExec = System.currentTimeMillis
-
-
-
       val res: TestExecutionResult = {
        if (!rs.next())
           TestExecutionResult()
-
-        val v = rs.getObject(1);
-        val pgrs = v.asInstanceOf[PgResultSet]
-
+        val pgrs = rs.getObject(1).asInstanceOf[PgResultSet]
         val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
-        rs.close()
-        val rowsCnt = rows.size
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rowsCnt)
+        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rows.size)
       }
       stmt.close()
       res
   }.catchAll {
-    case e: Exception => ZIO.logError(s" Exception exec_select_function_cursor msg=${e.getMessage} don't fail")
-      .as(TestExecutionResult(e.getMessage)) //*> //todo: maybe remove here
-          //todo: if we onpen it here anr run nultiple test and if one test fail, execution will stoped and error text send to client correctly.
-          //todo: use it for whole tests set execution
-      //ZIO.fail(throw new Exception(s"Exception for test.id = [${test.id}] with message ${e.getMessage}"))
+    case e: Exception => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getMessage))
   }
-    testResult <- execDbCall
-    _ <- ZIO.logInfo(s"test res = ${testResult}")
-    _ <- ZIO.logInfo(s"exec_select_function_cursor rowCount = ${testResult.rowCount}")
-    _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
+    _ <- execCallUpdateTestInRepo(execDbCall,test)
   } yield ()
 
 
