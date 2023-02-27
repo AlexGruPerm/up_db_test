@@ -21,12 +21,29 @@ trait TestRunner {
  * https://postgrespro.com/list/thread-id/1920893
 */
 case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner {
-
+  import java.sql.Types
   private def updateTestWithResult(test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- tr.updateTestWithResults(sid, test.checkConditions)
   } yield ()
 
-  import java.sql.Types
+  type Columns = IndexedSeq[(String, String)]
+  type ListRows = List[IndexedSeq[String]]
+
+  /**
+   * Goes through input ResultSet or PgResultSet and return columns with types and rows as List of Seq[String]
+  */
+  private def columnsRows[A <: ResultSet](rs: A): (Columns,ListRows) ={
+    val columns: IndexedSeq[(String, String)] = (1 to rs.getMetaData.getColumnCount)
+      .map(cnum => (rs.getMetaData.getColumnName(cnum), rs.getMetaData.getColumnTypeName(cnum)))
+
+    val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(rs).takeWhile(_.next()).map {
+      rs => columns.map(cname => rs.getString(cname._1))
+    }
+    val results: List[IndexedSeq[String]] = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
+    (columns,results)
+  }
+
+
   private def exec_func_inout_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
@@ -44,17 +61,11 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
       val pgrs : PgResultSet = v.asInstanceOf[PgResultSet]
 
       val res: TestExecutionResult = {
-        val columns: IndexedSeq[(String, String)] = (1 to pgrs.getMetaData.getColumnCount)
-          .map(cnum => (pgrs.getMetaData.getColumnName(cnum), pgrs.getMetaData.getColumnTypeName(cnum)))
-
-        val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map {
-          rs => columns.map(cname => rs.getString(cname._1))
-        }
-        val results: List[IndexedSeq[String]] = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
+        val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
         pgrs.close()
-        val rowsCnt = results.size
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, columns.toList, rowsCnt)
+        val rowsCnt = rows.size
+        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rowsCnt)
       }
       stmt.close()
       res
@@ -71,7 +82,6 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
   } yield ()
 
-  import java.sql.Types
   private def exec_select_dataset(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
@@ -83,23 +93,11 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
       val pgrs: ResultSet = stmt.executeQuery(test.call);
       val tExec = System.currentTimeMillis
       val res: TestExecutionResult = {
-
-        val columns: IndexedSeq[(String, String)] = (1 to pgrs.getMetaData.getColumnCount)
-          .map(cnum => (pgrs.getMetaData.getColumnName(cnum), pgrs.getMetaData.getColumnTypeName(cnum)))
-
-        val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map {
-          rs => columns.map(cname => rs.getString(cname._1))
-        }
-        val results: List[IndexedSeq[String]] = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
+        val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
         pgrs.close()
-        val rowsCnt = results.size
-
-        /*      todo: If test condition related with data in dataset we can use fetched results as List of rows.
-                println(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-                results.foreach(println)
-                println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")*/
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, columns.toList, rowsCnt)
+        val rowsCnt = rows.size
+        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rowsCnt)
       }
       stmt.close()
       res
@@ -116,7 +114,6 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
   } yield ()
 
-  import java.sql.Types
   private def exec_select_function_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
@@ -127,28 +124,21 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
       val tBegin = System.currentTimeMillis
       val rs: ResultSet = stmt.executeQuery()
       val tExec = System.currentTimeMillis
+
+
+
       val res: TestExecutionResult = {
-        if (!rs.next())
+       if (!rs.next())
           TestExecutionResult()
 
         val v = rs.getObject(1);
         val pgrs = v.asInstanceOf[PgResultSet]
-        val columns: IndexedSeq[(String, String)] = (1 to pgrs.getMetaData.getColumnCount)
-          .map(cnum => (pgrs.getMetaData.getColumnName(cnum), pgrs.getMetaData.getColumnTypeName(cnum)))
 
-        val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(pgrs).takeWhile(_.next()).map {
-          rs => columns.map(cname => rs.getString(cname._1))
-        }
-        val results: List[IndexedSeq[String]] = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
+        val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
         rs.close()
-        val rowsCnt = results.size
-
-/*      todo: If test condition related with data in dataset we can use fetched results as List of rows.
-        println(s"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        results.foreach(println)
-        println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")*/
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, columns.toList, rowsCnt)
+        val rowsCnt = rows.size
+        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rowsCnt)
       }
       stmt.close()
       res
@@ -167,7 +157,6 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
 
 
   private def exec(test: TestInRepo): ZIO[TestsMeta with jdbcSession, Exception, Unit] = for {
-    /*meta <- ZIO.service[TestsMeta]*/
     jdbc <- ZIO.service[jdbcSession]
     conn <- jdbc.pgConnection
     _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] isOpened Connection = ${!conn.sess.isClosed}")

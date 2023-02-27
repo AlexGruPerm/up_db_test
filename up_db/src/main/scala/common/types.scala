@@ -149,21 +149,21 @@ object types {
     def apply(tm: TestModel) : TestModelRepo = {
       val testsInRepo: Option[List[TestInRepo]] = tm.tests.map{tst => tst.map{t =>
         TestInRepo(t.id, t.name, t.call_type, t.ret_type, t.call, t.success_condition, t.isEnabled, testStateUndefined , isExecuted= false,
-          testRes = TestExecutionResult(0L, 0L, 0L, List[(String, String)](), 0))
+          testRes = TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0))
       }}
       TestModelRepo(tm.meta, testsInRepo)
     }
 
   }
 
-  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int, errMsg: Option[String] = None)
+  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : IndexedSeq[(String,String)], rowCount: Int, errMsg: Option[String] = None)
 
   object TestExecutionResult {
     def apply(): TestExecutionResult =
-      TestExecutionResult(0L, 0L, 0L, List[(String, String)](), 0)
+      TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0)
 
     def apply(errMsg: String): TestExecutionResult =
-      TestExecutionResult(0L, 0L, 0L, List[(String, String)](), 0,errMsg = Some(errMsg))
+      TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0,errMsg = Some(errMsg))
   }
 
 }
