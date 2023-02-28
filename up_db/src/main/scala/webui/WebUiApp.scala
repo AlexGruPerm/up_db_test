@@ -158,7 +158,7 @@ object WebUiApp {
         case Right(testsToRun) =>
           startTestsLogic(testsToRun).provide(ZLayer.succeed(tr),TestRunnerImpl.layer, ZLayer.succeed(testsToRun.sid))
           .foldZIO(
-            err => ZioResponseMsgBadRequest(err.getMessage),
+            err => ZIO.logError("-- this point --") *> ZioResponseMsgBadRequest(err.getMessage),
             _ => ZIO.succeed(Response.json(ResponseMessage("OK").toJson))
           )
       }

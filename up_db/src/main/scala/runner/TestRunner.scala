@@ -43,21 +43,15 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     (columns,results)
   }
 
-
   private def execCallUpdateTestInRepo(dbCall: UIO[TestExecutionResult], test: TestInRepo): ZIO[Any,Exception,Unit] = for {
     testResult <- dbCall
-    //_ <- ZIO.logInfo(s"test res = ${testResult}")
-    //_ <- ZIO.logInfo(s"exec_select_function_cursor rowCount = ${testResult.rowCount}")
     _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
   } yield ()
-
 
   private def exec_func_inout_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: UIO[TestExecutionResult] = ZIO.attemptBlocking {
-      connection.commit()
-      connection.setAutoCommit(false)
       val procCallText = s"{call ${test.call} }"
       val stmt = connection.prepareCall(procCallText);
       stmt.setNull(1, Types.OTHER)
@@ -83,8 +77,6 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: UIO[TestExecutionResult] = ZIO.attemptBlocking {
-      connection.commit() //todo: remove it !?
-      connection.setAutoCommit(false) //todo: remove it !?
       val stmt = connection.createStatement()
       val tBegin = System.currentTimeMillis
       val pgrs: ResultSet = stmt.executeQuery(test.call);
@@ -106,8 +98,6 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: UIO[TestExecutionResult] = ZIO.attemptBlocking {
-      connection.commit() //todo: remove it !?
-      connection.setAutoCommit(false) //todo: remove it !?
       val stmt = connection.prepareStatement(test.call)
       val tBegin = System.currentTimeMillis
       val rs: ResultSet = stmt.executeQuery()
@@ -122,17 +112,19 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
       }
       stmt.close()
       res
-  }.catchAll {
+  }.catchAllDefect {
+      case e: Exception => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getMessage))
+    }.catchAll {
     case e: Exception => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getMessage))
   }
     _ <- execCallUpdateTestInRepo(execDbCall,test)
   } yield ()
 
-
   private def exec(test: TestInRepo): ZIO[TestsMeta with jdbcSession, Exception, Unit] = for {
     jdbc <- ZIO.service[jdbcSession]
     conn <- jdbc.pgConnection
     _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] isOpened Connection = ${!conn.sess.isClosed}")
+    //todo: convert switches in case of comparing pairs (test.call_type,test.ret_type)  match { case (_:A,_:B) => ... }
     _ <- test.call_type match {
       case _: select_function.type =>
         test.ret_type match {
@@ -176,7 +168,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
           ZIO.foreachDiscard(testsSet.tests.getOrElse(List[TestInRepo]()).filter(_.isEnabled == true)) {
             testId: TestInRepo =>
               exec(testId).provide(ZLayer.succeed(testsSet.meta), jdbcSessionImpl.layer) @@ execInRunCount
-          }//Here we can use catchAllDefect for catch errors for all tests in set.
+          }
         case None => ZIO.unit
       }
     } yield ()
