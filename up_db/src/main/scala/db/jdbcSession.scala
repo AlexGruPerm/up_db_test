@@ -16,17 +16,20 @@ case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
   override val pgConnection:  ZIO[Any,Exception,pgSess] = for {
     _ <- ZIO.unit
     sessEffect = ZIO.attemptBlocking{
+      //todo: remove try catch inside attemptBlocking{} as in exec_xxx methods. and check test with bad creds.
+      //todo: try move val props = new Properties() into trait jdbcSession
       try {
         val props = new Properties()
         props.setProperty("user", cp.db_user)
         props.setProperty("password", cp.db_password)
         val c: Connection = DriverManager.getConnection(cp.url, props)
-        c.setAutoCommit(false);
+        c.setAutoCommit(false) //todo: ????????? remove
+        //todo: convert next four lines into def that return pg_backend_pid: Int
         val stmt: Statement = c.createStatement
         val rs: ResultSet = stmt.executeQuery("SELECT pg_backend_pid() as pg_backend_pid")
         rs.next()
         val pg_backend_pid: Int = rs.getInt("pg_backend_pid")
-        pgSess(c, pg_backend_pid)
+        pgSess(c, pg_backend_pid)//todo: make parameter pg_backend_pid as Option default None
       } catch {
         case e: Exception =>
           throw new Exception(e.getMessage)
@@ -35,6 +38,7 @@ case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
       case e: Exception => ZIO.logError(s" Exception jdbcSessionImpl msg=${e.getMessage}") *>
         ZIO.fail(throw new Exception(e.getMessage +cp.urlMsg))
     }
+    //todo: refactor it and add prometheus metric for connect.
     _ <- ZIO.logInfo(s"  ") *>
       ZIO.logInfo(s"New connection =============== >>>>>>>>>>>>> ")
     sess <- sessEffect

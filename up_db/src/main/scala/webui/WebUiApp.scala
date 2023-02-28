@@ -139,9 +139,6 @@ object WebUiApp {
     _ <- testRunner.run()
   } yield ()
 
-  //todo: Analyze and remove boilerplate
-  //todo: ZIO.succeed(Response.json(ResponseMessage(err.getMessage).toJson).setStatus(Status.BadRequest)) =>
-  //todo: ZioResponseMsgBadRequest(message: String)
 
   def ZioResponseMsgBadRequest(message: String): ZIO[Any,Nothing,Response] =
     ZIO.succeed(Response.json(ResponseMessage(message).toJson).setStatus(Status.BadRequest))
