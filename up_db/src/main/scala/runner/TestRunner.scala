@@ -16,17 +16,12 @@ import scala.reflect.internal.ClassfileConstants.instanceof
     def run(): ZIO[Any, Exception, Unit]
   }
 
-/**
- * DOCS:
- * https://jdbc.postgresql.org/documentation/callproc/
- * https://postgrespro.com/list/thread-id/1920893
-*/
   case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner {
   import java.sql.Types
+
   private def updateTestWithResult(test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- tr.updateTestWithResults(sid, test.checkConditions)
   } yield ()
-
 
   /**
    * Goes through input ResultSet or PgResultSet and return columns with types and rows as List of Seq[String]
@@ -37,7 +32,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
     val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(rs).takeWhile(_.next()).map {
       rs => columns.map(cname => rs.getString(cname._1))
     }
-    val results: List[IndexedSeq[String]] = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
+    val results: ListRows = Iterator.continually(resultsCur).takeWhile(itr => itr.hasNext).flatten.toList
     rs.close()
     (columns,results)
   }
@@ -126,7 +121,6 @@ import scala.reflect.internal.ClassfileConstants.instanceof
     jdbc <- ZIO.service[jdbcSession]
     conn <- jdbc.pgConnection
     _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] isOpened Connection = ${!conn.sess.isClosed}")
-    //todo: convert switches in case of comparing pairs (test.call_type,test.ret_type)  match { case (_:A,_:B) => ... }
     _ <- (test.call_type,test.ret_type) match {
       case (_: select_function.type, _: cursor.type) => exec_select_function_cursor(conn,test) @@
         countAllRequests("select_function_cursor")
@@ -162,7 +156,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
         case None => ZIO.unit
       }
     } yield ()
-}
+  }
 
   object TestRunnerImpl {
     val layer: ZLayer[ImplTestsRepo with SessionId, Exception, TestRunner] =

@@ -16,7 +16,6 @@ object types {
   type Columns = IndexedSeq[Column]
   type ListRows = List[IndexedSeq[String]]
 
-
   case class CallTimings(tBegin: Long, tExec: Long, tFetch: Long)
 
   /**
