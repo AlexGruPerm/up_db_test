@@ -7,33 +7,32 @@ import org.postgresql.jdbc.PgResultSet
 import tmodel.{TestsMeta, cursor, dataset, func_inout_cursor, select, select_function}
 import zio.metrics.{Metric, MetricLabel}
 import zio.{Task, UIO, ZIO, ZLayer}
+import common.types._
 
 import java.sql.{ResultSet, SQLException}
 import scala.reflect.internal.ClassfileConstants.instanceof
 
-trait TestRunner {
-  def run(): ZIO[Any, Exception, Unit]
-}
+  trait TestRunner {
+    def run(): ZIO[Any, Exception, Unit]
+  }
 
 /**
  * DOCS:
  * https://jdbc.postgresql.org/documentation/callproc/
  * https://postgrespro.com/list/thread-id/1920893
 */
-case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner {
+  case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner {
   import java.sql.Types
   private def updateTestWithResult(test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- tr.updateTestWithResults(sid, test.checkConditions)
   } yield ()
 
-  type Columns = IndexedSeq[(String, String)]
-  type ListRows = List[IndexedSeq[String]]
 
   /**
    * Goes through input ResultSet or PgResultSet and return columns with types and rows as List of Seq[String]
   */
   private def columnsRows[A <: ResultSet](rs: A): (Columns,ListRows) ={
-    val columns: IndexedSeq[(String, String)] = (1 to rs.getMetaData.getColumnCount)
+    val columns: Columns = (1 to rs.getMetaData.getColumnCount)
       .map(cnum => (rs.getMetaData.getColumnName(cnum), rs.getMetaData.getColumnTypeName(cnum)))
     val resultsCur: Iterator[IndexedSeq[String]] = Iterator.continually(rs).takeWhile(_.next()).map {
       rs => columns.map(cname => rs.getString(cname._1))
@@ -63,7 +62,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
       val res: TestExecutionResult = {
         val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rows.size)
+        TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
       }
       stmt.close()
       res
@@ -84,7 +83,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
       val res: TestExecutionResult = {
         val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rows.size)
+        TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
       }
       stmt.close()
       res
@@ -108,7 +107,7 @@ case class TestRunnerImpl(tr: ImplTestsRepo, sid: SessionId) extends TestRunner 
         val pgrs = rs.getObject(1).asInstanceOf[PgResultSet]
         val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
-        TestExecutionResult(tFetch - tBegin, tFetch - tExec, tExec - tBegin, cols, rows.size)
+        TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
       }
       stmt.close()
       res

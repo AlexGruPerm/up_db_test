@@ -10,6 +10,15 @@ import scala.::
 object types {
   type SessionId = String
 
+  type ColumnName = String
+  type ColumnType = String
+  type Column = (ColumnName,ColumnType)
+  type Columns = IndexedSeq[Column]
+  type ListRows = List[IndexedSeq[String]]
+
+
+  case class CallTimings(tBegin: Long, tExec: Long, tFetch: Long)
+
   /**
    * success_condition - List of SucCondElement contains execution results in fields:
    * execResultValue: Option[Int]     For example, for "condition":"rows_eq",      "checkValue":12  execResultValue=Some(x)
@@ -156,7 +165,7 @@ object types {
 
   }
 
-  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : IndexedSeq[(String,String)], rowCount: Int, errMsg: Option[String] = None)
+  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : Columns, rowCount: Int, errMsg: Option[String] = None)
 
   object TestExecutionResult {
     def apply(): TestExecutionResult =
@@ -164,6 +173,10 @@ object types {
 
     def apply(errMsg: String): TestExecutionResult =
       TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0,errMsg = Some(errMsg))
+
+    def apply(timings: CallTimings, cols: Columns, rowCount: Int): TestExecutionResult =
+      TestExecutionResult(timings.tFetch - timings.tBegin, timings.tFetch - timings.tExec, timings.tExec - timings.tBegin, cols, rowCount)
+
   }
 
 }
