@@ -127,25 +127,13 @@ import scala.reflect.internal.ClassfileConstants.instanceof
     conn <- jdbc.pgConnection
     _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] isOpened Connection = ${!conn.sess.isClosed}")
     //todo: convert switches in case of comparing pairs (test.call_type,test.ret_type)  match { case (_:A,_:B) => ... }
-    _ <- test.call_type match {
-      case _: select_function.type =>
-        test.ret_type match {
-          case _: cursor.type => exec_select_function_cursor(conn,test) @@
-            countAllRequests("select_function_cursor")
-          case _ => ZIO.unit
-        }
-      case _: func_inout_cursor.type =>
-        test.ret_type match {
-          case _: cursor.type => exec_func_inout_cursor(conn,test) @@
-            countAllRequests("func_inout_cursor")
-          case _ => ZIO.unit
-        }
-      case _: select.type =>
-        test.ret_type match {
-          case _: dataset.type => exec_select_dataset(conn,test) @@
-            countAllRequests("select_dataset")
-          case _ => ZIO.unit
-        }
+    _ <- (test.call_type,test.ret_type) match {
+      case (_: select_function.type, _: cursor.type) => exec_select_function_cursor(conn,test) @@
+        countAllRequests("select_function_cursor")
+      case (_: func_inout_cursor.type , _: cursor.type) => exec_func_inout_cursor(conn,test) @@
+        countAllRequests("func_inout_cursor")
+      case (_: select.type, _: dataset.type) => exec_select_dataset(conn,test) @@
+        countAllRequests("select_dataset")
       case _ => ZIO.unit
     }
   } yield ()
