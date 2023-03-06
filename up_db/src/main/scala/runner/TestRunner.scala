@@ -4,12 +4,12 @@ import common.types.{SessionId, TestExecutionResult, TestInRepo}
 import data.ImplTestsRepo
 import db.{jdbcSession, jdbcSessionImpl, pgSess}
 import org.postgresql.jdbc.PgResultSet
-import tmodel.{TestsMeta, cursor, dataset, func_inout_cursor, select, select_function}
+import tmodel.{TestsMeta, cursor, dataset, func_inout_cursor, integer_value, select, select_function}
 import zio.metrics.{Metric, MetricLabel}
 import zio.{Task, UIO, ZIO, ZLayer}
 import common.types._
 
-import java.sql.{ResultSet, SQLException}
+import java.sql.{Connection, ResultSet, SQLException}
 import scala.reflect.internal.ClassfileConstants.instanceof
 
   trait TestRunner {
@@ -42,6 +42,10 @@ import scala.reflect.internal.ClassfileConstants.instanceof
     _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
   } yield ()
 
+    private def makeCommit(use: Option[Boolean], conn: Connection) =
+      if (use.getOrElse(false))
+        conn.commit()
+
   private def exec_func_inout_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
@@ -59,6 +63,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
         val tFetch = System.currentTimeMillis
         TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
       }
+      makeCommit(test.use_commit, connection)
       stmt.close()
       res
     }
@@ -79,12 +84,38 @@ import scala.reflect.internal.ClassfileConstants.instanceof
         val tFetch = System.currentTimeMillis
         TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
       }
+      makeCommit(test.use_commit, connection)
       stmt.close()
       res
     }
     execDbCallCatched = catchAllErrs(execDbCall)
     _ <- execCallUpdateTestInRepo(execDbCallCatched,test)
   } yield ()
+
+    private def exec_select_function_int(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
+      _ <- ZIO.unit
+      connection = pgses.sess
+      execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
+        val stmt = connection.createStatement()
+        val tBegin = System.currentTimeMillis
+        val pgrs: ResultSet = stmt.executeQuery(test.call);
+        val tExec = System.currentTimeMillis
+        val res: TestExecutionResult = {
+          val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
+          val tFetch = System.currentTimeMillis
+          TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
+        }
+        //todo: add in all functions as a new function call.
+/*        if (test.use_commit.getOrElse(false)) {
+          connection.commit()
+        }*/
+        makeCommit(test.use_commit, connection)
+        stmt.close()
+        res
+      }
+      execDbCallCatched = catchAllErrs(execDbCall)
+      _ <- execCallUpdateTestInRepo(execDbCallCatched,test)
+    } yield ()
 
   private def exec_select_function_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
@@ -102,6 +133,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
         val tFetch = System.currentTimeMillis
         TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
       }
+      makeCommit(test.use_commit, connection)
       stmt.close()
       res
   }
@@ -124,6 +156,8 @@ import scala.reflect.internal.ClassfileConstants.instanceof
     _ <- (test.call_type,test.ret_type) match {
       case (_: select_function.type, _: cursor.type) => exec_select_function_cursor(conn,test) @@
         countAllRequests("select_function_cursor")
+      case (_: select_function.type, _: integer_value.type) => exec_select_function_int(conn,test) @@
+        countAllRequests("select_function_integer_value")
       case (_: func_inout_cursor.type , _: cursor.type) => exec_func_inout_cursor(conn,test) @@
         countAllRequests("func_inout_cursor")
       case (_: select.type, _: dataset.type) => exec_select_dataset(conn,test) @@

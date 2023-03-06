@@ -28,6 +28,7 @@ object types {
                          name: String,
                          call_type: CallType,
                          ret_type: RetType,
+                         use_commit: Option[Boolean],
                          call: String,
                          success_condition: Option[List[SucCondElement]],
                          isEnabled: Boolean,
@@ -106,7 +107,7 @@ object types {
            tr(td("Call type :"),td(call_type.toString)),
            tr(td("Return type :"),td(ret_type.toString)),
            tr(td(colSpanAttr:= "2",div("Call :"))),
-           tr(td(colSpanAttr:= "2",call)),
+           tr(td(colSpanAttr:= "2", pre(wrapAttr:= "pre-wrap", widthAttr := "200px", call) )),
            tr(td(colSpanAttr:= "2","Success conditions:")),
            tr(td(colSpanAttr:= "2",
              //table with success conditions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -156,7 +157,7 @@ object types {
   object TestModelRepo {
     def apply(tm: TestModel) : TestModelRepo = {
       val testsInRepo: Option[List[TestInRepo]] = tm.tests.map{tst => tst.map{t =>
-        TestInRepo(t.id, t.name, t.call_type, t.ret_type, t.call, t.success_condition, t.isEnabled, testStateUndefined , isExecuted= false,
+        TestInRepo(t.id, t.name, t.call_type, t.ret_type, t.use_commit, t.call, t.success_condition, t.isEnabled, testStateUndefined , isExecuted= false,
           testRes = TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0))
       }}
       TestModelRepo(tm.meta, testsInRepo)

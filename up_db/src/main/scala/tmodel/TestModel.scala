@@ -127,6 +127,7 @@ sealed trait TestState
                    name: String,
                    call_type: CallType,
                    ret_type: RetType,
+                   use_commit: Option[Boolean],
                    call: String,
                    success_condition: Option[List[SucCondElement]],
                    isEnabled: Boolean = false
