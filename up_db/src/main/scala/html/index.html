@@ -66,7 +66,7 @@
                      const t_failure  = response_json.tests.failure;
                      const t_percent  = Math.round((t_executed*100)/t_enabled);
 
-                     curr_state.innerHTML = "";
+
                      curr_state.innerHTML  = `<div>total : ${t_total} </div>`;
                      curr_state.innerHTML += `<div>enabled : ${t_enabled} </div>`;
                      curr_state.innerHTML += `<div>disabled : ${t_disabled} </div>`;
@@ -340,7 +340,7 @@ span:hover {
 }
 
 .test_state_undef {background-color: #D3D3D3;}
-.test_state_executing {background-color: #FFFFE0;}
+.test_state_executing {background-color: #F9E79F;}
 .test_state_success {background-color: #8FBC8F;}
 .test_state_failure {background-color: #E6ACAC;}
 

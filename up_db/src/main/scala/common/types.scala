@@ -106,6 +106,16 @@ object types {
            ),
            tr(td("Call type :"),td(call_type.toString)),
            tr(td("Return type :"),td(ret_type.toString)),
+           if (use_commit.getOrElse(false))
+             tr(bgColorAttr := "#F9E79F",
+               td(
+                 colSpanAttr:= "2",
+                 div(
+                   "Commit"
+                 )
+               )
+             ) else ()
+           ,
            tr(td(colSpanAttr:= "2",div("Call :"))),
            tr(td(colSpanAttr:= "2", pre(wrapAttr:= "pre-wrap", widthAttr := "200px", call) )),
            tr(td(colSpanAttr:= "2","Success conditions:")),
