@@ -34,7 +34,8 @@ object types {
                          isEnabled: Boolean,
                          testState: TestState = testStateUndefined,
                          isExecuted: Boolean = false,
-                         testRes: TestExecutionResult
+                         testRes: TestExecutionResult,
+                         countOfExecuted: Int = 0
                  ) {
 
     private def getState(checked_success_condition: Option[List[SucCondElement]]): TestState = {
@@ -101,6 +102,14 @@ object types {
                colSpanAttr:= "2",
                div(
                  s"[$id] $name"
+               ),br()
+             )
+           ),
+           tr(
+             td(
+               colSpanAttr:= "2",
+               div(
+                 s"Test was executed $countOfExecuted times."
                ),br()
              )
            ),

@@ -39,7 +39,10 @@ import scala.reflect.internal.ClassfileConstants.instanceof
 
   private def execCallUpdateTestInRepo(dbCall: UIO[TestExecutionResult], test: TestInRepo): ZIO[Any,Exception,Unit] = for {
     testResult <- dbCall
-    _ <- updateTestWithResult(test.copy(isExecuted = true, testRes = testResult))
+    _ <- updateTestWithResult(test.copy(
+      isExecuted = true,
+      testRes = testResult,
+      countOfExecuted = test.countOfExecuted+1))
   } yield ()
 
     private def makeCommit(use: Option[Boolean], conn: Connection) =
