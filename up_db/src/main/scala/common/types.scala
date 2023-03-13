@@ -1,7 +1,7 @@
 package common
 
 import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, fields_exists, testStateFailure, testStateSuccess, testStateUndefined}
-import zio.http.html.{td, _}
+import zio.http.html.{pre, td, _}
 import zio.http.{Handler, Response}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
@@ -84,7 +84,8 @@ object types {
                tr(bgColorAttr := "#FF4500;",
                td(
                  colSpanAttr:= "2",
-                 div(errMsg)
+                 //div(errMsg)
+                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", errMsg)
                ))
              case None => br()
            },
@@ -134,6 +135,7 @@ object types {
                table(
                  borderAttr := "1px",
                  idAttr := s"table_test_conditions_$id",
+                 widthAttr := "100%",
                  tr(
                    td("Exec value"),
                    td("Condition"),
