@@ -84,7 +84,6 @@ object types {
                tr(bgColorAttr := "#FF4500;",
                td(
                  colSpanAttr:= "2",
-                 //div(errMsg)
                    pre(wrapAttr:= "pre-wrap", widthAttr := "200px", errMsg)
                ))
              case None => br()
@@ -94,7 +93,6 @@ object types {
                tr(bgColorAttr := "#FF4500;",
                  td(
                    colSpanAttr:= "2",
-                   //div(call)
                      pre(wrapAttr:= "pre-wrap", widthAttr := "200px", call)
                  ))
              case None => br()
@@ -136,7 +134,6 @@ object types {
                table(
                  borderAttr := "1px",
                  idAttr := s"table_test_conditions_$id",
-                 //widthAttr := "100%",
                  tr(
                    td("Exec value"),
                    td("Condition"),

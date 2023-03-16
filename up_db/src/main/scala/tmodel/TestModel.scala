@@ -67,7 +67,7 @@ sealed trait SucCond
     override def toString: String = "Full time (ms.) < "
   }
   case object fields_exists  extends SucCond{
-    override def toString: String = "fileds exists "
+    override def toString: String = "fields exists "
   }
   //case object no_exception extends SucCond("no_exception")
   //case object exception extends SucCond("exception")
