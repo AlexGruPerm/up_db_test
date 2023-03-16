@@ -21,16 +21,17 @@ case class pgSess(sess : Connection){
 
 trait jdbcSession {
   val props = new Properties()
-  val pgConnection: ZIO[Any,Exception,pgSess]
+  def pgConnection(testId: Int): ZIO[Any,Exception,pgSess]
 }
 
 case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
-  override val pgConnection:  ZIO[Any,Exception,pgSess] = for {
+  override def pgConnection(testId: Int):  ZIO[Any,Exception,pgSess] = for {
     _ <- ZIO.unit
     sessEffect = ZIO.attemptBlocking{
         props.setProperty("user", cp.db_user)
         props.setProperty("password", cp.db_password)
         val conn = DriverManager.getConnection(cp.url, props)
+        conn.setClientInfo("ApplicationName",s"up_test $testId")
         conn.setAutoCommit(false)
         pgSess(conn)
       }.catchAll {

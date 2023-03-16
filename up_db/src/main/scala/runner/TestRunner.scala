@@ -68,6 +68,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
       }
       makeCommit(test.use_commit, connection)
       stmt.close()
+      connection.close()
       res
     }
     execDbCallCatched = catchAllErrs(execDbCall)
@@ -89,6 +90,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
       }
       makeCommit(test.use_commit, connection)
       stmt.close()
+      connection.close()
       res
     }
     execDbCallCatched = catchAllErrs(execDbCall)
@@ -114,6 +116,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
         }*/
         makeCommit(test.use_commit, connection)
         stmt.close()
+        connection.close()
         res
       }
       execDbCallCatched = catchAllErrs(execDbCall)
@@ -138,6 +141,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
       }
       makeCommit(test.use_commit, connection)
       stmt.close()
+      connection.close()
       res
   }
     execDbCallCatched = catchAllErrs(execDbCall)
@@ -154,7 +158,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
 
   private def exec(test: TestInRepo): ZIO[TestsMeta with jdbcSession, Exception, Unit] = for {
     jdbc <- ZIO.service[jdbcSession]
-    conn <- jdbc.pgConnection
+    conn <- jdbc.pgConnection(test.id)
     _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] isOpened Connection = ${!conn.sess.isClosed}")
     _ <- (test.call_type,test.ret_type) match {
       case (_: select_function.type, _: cursor.type) => exec_select_function_cursor(conn,test) @@
