@@ -85,8 +85,8 @@ sealed trait TestState
                             checkValue: Option[Int],
                             fields: Option[List[String]],
                             execResultValue: Option[Long],
-                            conditionResult: Option[Boolean],
-                            is_exists: Option[Boolean]){
+                            conditionResult: Option[Boolean]
+                           ){
 
     def check(testRes: TestExecutionResult):SucCondElement = {
       val (checkConditionRes,testResVal): (Boolean,Option[Long]) =
@@ -101,7 +101,7 @@ sealed trait TestState
         // ._1 - column name, _.2 - column type
         case _:fields_exists.type  => (fields.getOrElse(List[String]()).forall(testRes.cols.map(cls => cls._1).contains),
           Some(1))
-        case _:exec_exception.type => (true,Some(1))
+        case _:exec_exception.type => (testRes.err.fold(false)(_ => true),Some(1))
         }
       this.copy(execResultValue = testResVal, conditionResult = Some(checkConditionRes))
     }

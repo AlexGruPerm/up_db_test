@@ -49,7 +49,6 @@ object types {
       testState
     }
 
-
     /**
      * Used for analyze executions results in testRes
      * with test's conditions (success_condition).
@@ -61,12 +60,6 @@ object types {
       val newTestState: TestState = getState(checked_success_conditions)
       this.copy(success_condition = checked_success_conditions,testState = newTestState, testRes = this.testRes)
     }
-
-
-
-
-    //  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean])
-    //  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int, errMsg: Option[String] = None)
 
     def getTestAsHtml: Html =
       div(
@@ -95,33 +88,6 @@ object types {
                      ))
                    })
                  ))
-               /*
-               if (success_condition.getOrElse(List[SucCondElement]()).exists(sc => sc.condition match {
-                 case _:exec_exception.type => true
-                 case _ => false
-               })) {
-                 tr(bgColorAttr := "#FF45FF;",
-                   td(
-                     colSpanAttr:= "2",
-                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.exceptionType}"),
-                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg),
-                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg.substring(
-                       err.exceptionMsg.indexOf("MESSAGE TEXT:")+14,
-                       err.exceptionMsg.indexOf("CONTEXT")
-                     ))
-                   ))
-               } else {
-                 tr(bgColorAttr := "#FF4500;",
-                 td(
-                   colSpanAttr:= "2",
-                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.exceptionType}"),
-                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg),
-                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg.substring(
-                       err.exceptionMsg.indexOf("MESSAGE TEXT:")+14,
-                       err.exceptionMsg.indexOf("CONTEXT")
-                     ))
-                 ))
-               }*/
              case None => br()
            },
           tr(
@@ -129,17 +95,6 @@ object types {
               colSpanAttr:= "2",
               pre(wrapAttr:= "pre-wrap", widthAttr := "200px", call)
             )),
-           /*
-           testRes.err match {
-             case Some(_) =>
-               tr(bgColorAttr := "#FF4500;",
-                 td(
-                   colSpanAttr:= "2",
-                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", call)
-                 ))
-             case None => br()
-           },
-           */
            tr(
              td(
                colSpanAttr:= "2",
@@ -171,8 +126,8 @@ object types {
            tr(td(colSpanAttr:= "2",div("Call :"))),
            tr(td(colSpanAttr:= "2", pre(wrapAttr:= "pre-wrap", widthAttr := "200px", call) )),
            tr(td(colSpanAttr:= "2","Success conditions:")),
+           //table with success conditions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
            tr(td(colSpanAttr:= "2",
-             //table with success conditions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
              //condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean]
                table(
                  borderAttr := "1px",
@@ -191,23 +146,16 @@ object types {
                      td(
                        sc.condition match {
                          case _:fields_exists.type => testRes.cols.map(_._1).mkString("</br>")
-/*                         case _:exec_exception.type =>
-                           testRes.err match {
-                             case Some(_) => "exception exist"
-                             case None => "no exception"
-                           }*/
+                         case _:exec_exception.type =>
+                           testRes.err.fold("no exception but expected")(_ => "exception exist, it's OK")
                          case _ => sc.execResultValue.getOrElse(0).toString
                        }
-
                      ),
                      td(sc.condition.toString),
                      td(
                        sc.condition match {
                          case _:fields_exists.type => sc.fields.getOrElse(List[String]()).mkString("</br>")
-/*                         case _:exec_exception.type => sc.is_exists match {
-                           case Some(v) => v.toString
-                           case None => "-"
-                         }*/
+                         case _:exec_exception.type => "true"
                          case _ => sc.checkValue.toString
                        }
                      ),
@@ -215,10 +163,8 @@ object types {
                    )
                  }
                )
-             // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-           ))//,
-           //tr(td("111111"),td("2222222")),
-           //tr(td("111111"),td("2222222"))
+           ))
+           // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
          )
       )
   }
