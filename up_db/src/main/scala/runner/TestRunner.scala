@@ -150,9 +150,9 @@ import scala.reflect.internal.ClassfileConstants.instanceof
 
   private def catchAllErrs(eff: ZIO[Any, Throwable, TestExecutionResult]): UIO[TestExecutionResult] = for {
     effAfterCatch <- eff.catchAllDefect {
-      case e: Exception => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getMessage))
+      case e: Exception => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getClass.getName,e.getMessage))
     }.catchAll {
-      e: Throwable => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getMessage))
+      e: Throwable => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getClass.getName,e.getMessage))
     }
   } yield effAfterCatch
 

@@ -1,6 +1,6 @@
 package tmodel
 
-import common.types.{TestExecutionResult, TestInRepo}
+import common.types.{TestExecutionException, TestExecutionResult, TestInRepo}
 import zio.http.html.div
 import zio.http.{Handler, Response}
 import zio.{Random, ZIO}
@@ -78,13 +78,10 @@ sealed trait TestState
   case object testStateFailure extends  TestState
   case object testStateExecuting extends TestState
 
-//  case class SucCondElement(condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean])
-//  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : List[(String,String)], rowCount: Int, errMsg: Option[String] = None)
-/*
-  execResultValue: row count, scalar value (Int,String,....), is_exception = 0,1, execution_Time
-  */
+
   //todo: late change Int to Long
-  case class SucCondElement(condition: SucCond, checkValue: Option[Int], fields: Option[List[String]], execResultValue: Option[Long], conditionResult: Option[Boolean]){
+  case class SucCondElement(condition: SucCond, checkValue: Option[Int], fields: Option[List[String]],
+                            execResultValue: Option[Long], conditionResult: Option[Boolean]){
 
     def check(testRes: TestExecutionResult):SucCondElement = {
       val (checkConditionRes,testResVal): (Boolean,Option[Long]) =
@@ -142,6 +139,9 @@ sealed trait TestState
   case class TestsToRun(sid: String, ids: Option[List[Int]])
 
   object EncDecTestModelImplicits{
+
+    implicit val encoderTestExecutionException: JsonEncoder[TestExecutionException] = DeriveJsonEncoder.gen[TestExecutionException]
+    implicit val decoderTestExecutionException: JsonDecoder[TestExecutionException] = DeriveJsonDecoder.gen[TestExecutionException]
 
     implicit val encoderCallType: JsonEncoder[CallType] = DeriveJsonEncoder.gen[CallType]
     implicit val decoder: JsonDecoder[CallType] = JsonDecoder[String].map {

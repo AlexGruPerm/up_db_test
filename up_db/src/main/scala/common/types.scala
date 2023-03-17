@@ -79,16 +79,23 @@ object types {
                    else
                      "test_state_undef" :: Nil),
            idAttr := s"table_test_$id",
-           testRes.errMsg match {
-             case Some(errMsg) =>
+           testRes.err match {
+             case Some(err) =>
                tr(bgColorAttr := "#FF4500;",
                td(
                  colSpanAttr:= "2",
-                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", errMsg)
+                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.excType}"),br(),
+                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.msg)
                ))
              case None => br()
            },
-           testRes.errMsg match {
+          tr(
+            td(
+              colSpanAttr:= "2",
+              pre(wrapAttr:= "pre-wrap", widthAttr := "200px", call)
+            )),
+           /*
+           testRes.err match {
              case Some(_) =>
                tr(bgColorAttr := "#FF4500;",
                  td(
@@ -97,6 +104,7 @@ object types {
                  ))
              case None => br()
            },
+           */
            tr(
              td(
                colSpanAttr:= "2",
@@ -184,14 +192,16 @@ object types {
 
   }
 
-  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : Columns, rowCount: Int, errMsg: Option[String] = None)
+  case class TestExecutionException(excType: String,msg: String)
+
+  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : Columns, rowCount: Int, err: Option[TestExecutionException] = None)
 
   object TestExecutionResult {
     def apply(): TestExecutionResult =
       TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0)
 
-    def apply(errMsg: String): TestExecutionResult =
-      TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0,errMsg = Some(errMsg))
+    def apply(excType:String, errMsg: String): TestExecutionResult =
+      TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0,err = Some(TestExecutionException(excType,errMsg)))
 
     def apply(timings: CallTimings, cols: Columns, rowCount: Int): TestExecutionResult =
       TestExecutionResult(timings.tFetch - timings.tBegin, timings.tFetch - timings.tExec, timings.tExec - timings.tBegin, cols, rowCount)
