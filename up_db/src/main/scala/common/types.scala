@@ -84,8 +84,8 @@ object types {
                tr(bgColorAttr := "#FF4500;",
                td(
                  colSpanAttr:= "2",
-                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.excType}"),br(),
-                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.msg)
+                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.exceptionType}"),br(),
+                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg)
                ))
              case None => br()
            },
@@ -192,7 +192,7 @@ object types {
 
   }
 
-  case class TestExecutionException(excType: String,msg: String)
+  case class TestExecutionException(exceptionType: String, exceptionMsg: String)
 
   case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : Columns, rowCount: Int, err: Option[TestExecutionException] = None)
 
