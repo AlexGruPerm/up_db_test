@@ -69,8 +69,9 @@ sealed trait SucCond
   case object fields_exists  extends SucCond{
     override def toString: String = "fields exists "
   }
-  //case object no_exception extends SucCond("no_exception")
-  //case object exception extends SucCond("exception")
+  case object exec_exception  extends SucCond{
+    override def toString: String = "is exception exist "
+  }
 
 sealed trait TestState
   case object testStateUndefined extends TestState
@@ -80,8 +81,12 @@ sealed trait TestState
 
 
   //todo: late change Int to Long
-  case class SucCondElement(condition: SucCond, checkValue: Option[Int], fields: Option[List[String]],
-                            execResultValue: Option[Long], conditionResult: Option[Boolean]){
+  case class SucCondElement(condition: SucCond,
+                            checkValue: Option[Int],
+                            fields: Option[List[String]],
+                            execResultValue: Option[Long],
+                            conditionResult: Option[Boolean],
+                            is_exists: Option[Boolean]){
 
     def check(testRes: TestExecutionResult):SucCondElement = {
       val (checkConditionRes,testResVal): (Boolean,Option[Long]) =
@@ -94,7 +99,9 @@ sealed trait TestState
         case _:fetch_time_ms.type => (testRes.fetchMs <= checkValue.getOrElse(0),Some(testRes.fetchMs))
         case _:full_time_ms.type  => (testRes.totalMs <= checkValue.getOrElse(0),Some(testRes.totalMs))
         // ._1 - column name, _.2 - column type
-        case _:fields_exists.type  => (fields.getOrElse(List[String]()).forall(testRes.cols.map(cls => cls._1).contains),Some(1))
+        case _:fields_exists.type  => (fields.getOrElse(List[String]()).forall(testRes.cols.map(cls => cls._1).contains),
+          Some(1))
+        case _:exec_exception.type => (true,Some(1))
         }
       this.copy(execResultValue = testResVal, conditionResult = Some(checkConditionRes))
     }
@@ -170,6 +177,7 @@ sealed trait TestState
       case "fetch_time_ms" => fetch_time_ms
       case "full_time_ms" => full_time_ms
       case "fields_exists" => fields_exists
+      case "exec_exception" => exec_exception
       case anyValue => throw new Exception(s"Invalid value in field inside success_condition = $anyValue")
     }
 

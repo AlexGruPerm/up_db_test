@@ -1,6 +1,6 @@
 package common
 
-import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, fields_exists, testStateFailure, testStateSuccess, testStateUndefined}
+import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, exec_exception, fields_exists, testStateFailure, testStateSuccess, testStateUndefined}
 import zio.http.html.{pre, td, _}
 import zio.http.{Handler, Response}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
@@ -82,11 +82,46 @@ object types {
            testRes.err match {
              case Some(err) =>
                tr(bgColorAttr := "#FF4500;",
-               td(
-                 colSpanAttr:= "2",
-                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.exceptionType}"),br(),
-                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg)
-               ))
+                 td(
+                   colSpanAttr:= "2",
+                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.exceptionType}"),
+                   pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg),
+                   (if ((err.exceptionMsg contains "MESSAGE TEXT:") &&
+                     (err.exceptionMsg contains "CONTEXT")
+                   ) {
+                     pre(wrapAttr := "pre-wrap", widthAttr := "200px", err.exceptionMsg.substring(
+                       err.exceptionMsg.indexOf("MESSAGE TEXT:") + 14,
+                       err.exceptionMsg.indexOf("CONTEXT")
+                     ))
+                   })
+                 ))
+               /*
+               if (success_condition.getOrElse(List[SucCondElement]()).exists(sc => sc.condition match {
+                 case _:exec_exception.type => true
+                 case _ => false
+               })) {
+                 tr(bgColorAttr := "#FF45FF;",
+                   td(
+                     colSpanAttr:= "2",
+                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.exceptionType}"),
+                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg),
+                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg.substring(
+                       err.exceptionMsg.indexOf("MESSAGE TEXT:")+14,
+                       err.exceptionMsg.indexOf("CONTEXT")
+                     ))
+                   ))
+               } else {
+                 tr(bgColorAttr := "#FF4500;",
+                 td(
+                   colSpanAttr:= "2",
+                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.exceptionType}"),
+                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg),
+                     pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg.substring(
+                       err.exceptionMsg.indexOf("MESSAGE TEXT:")+14,
+                       err.exceptionMsg.indexOf("CONTEXT")
+                     ))
+                 ))
+               }*/
              case None => br()
            },
           tr(
@@ -156,6 +191,11 @@ object types {
                      td(
                        sc.condition match {
                          case _:fields_exists.type => testRes.cols.map(_._1).mkString("</br>")
+/*                         case _:exec_exception.type =>
+                           testRes.err match {
+                             case Some(_) => "exception exist"
+                             case None => "no exception"
+                           }*/
                          case _ => sc.execResultValue.getOrElse(0).toString
                        }
 
@@ -164,6 +204,10 @@ object types {
                      td(
                        sc.condition match {
                          case _:fields_exists.type => sc.fields.getOrElse(List[String]()).mkString("</br>")
+/*                         case _:exec_exception.type => sc.is_exists match {
+                           case Some(v) => v.toString
+                           case None => "-"
+                         }*/
                          case _ => sc.checkValue.toString
                        }
                      ),
