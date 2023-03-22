@@ -1,0 +1,676 @@
+  {"meta":{
+          "connect_ip":"10.206.215.9",
+          "db_name":"npa_db",
+          "db_user":"npa",
+          "db_password":"npa",
+          "driver" : "org.postgresql.Driver"
+          },
+    "tests":[
+      {"id":1,
+       "name":"Create new npa group.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.save_group(p_group_id => null, p_name => 'test_up_grp_name_1', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array[38518], c_editors => array[37317], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array[37317,38518],c_flt_monitoring => array[37317,38518],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":250}
+                           ]
+      },
+      {"id":2,
+       "name":"EXCEPTION Create new npa group that already exist.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.save_group(p_group_id => null, p_name => 'test_up_grp_name_1', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array[38518], c_editors => array[37317], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array[37317,38518],c_flt_monitoring => array[37317,38518],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
+       "success_condition":[
+                             {"condition":"exec_exception"}
+                           ]
+      },
+      {"id":3,
+       "name":"Test that group created, has max id and our name.",
+       "call_type":"select",
+       "ret_type":"dataset",
+       "call":"select 1 as res from npa.npa_group ng where ng.is_deleted=0 and ng.name ='test_up_grp_name_1' and  ng.id = (select max(ngi.id) from npa.npa_group ngi where ngi.is_deleted=0)",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":100},
+                            {"condition":"fields_exists","fields":["res"]}
+                           ]
+      },
+      {"id":4,
+       "name":"Update name of existing group.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.save_group(p_group_id => (select max(id) from npa.npa_group), p_name => 'test_up_grp_name_2', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array[38518], c_editors => array[37317], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array[37317,38518],c_flt_monitoring => array[37317,38518],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":9000}
+                           ]
+      },
+      {"id":5,
+       "name":"Test updating name of group.",
+       "call_type":"select",
+       "ret_type":"dataset",
+       "call":"select 1 as res from npa.npa_group ng where ng.is_deleted=0 and ng.name ='test_up_grp_name_2' and  ng.id = (select max(ngi.id) from npa.npa_group ngi where ngi.is_deleted=0) ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":1000},
+                            {"condition":"fields_exists","fields":["res"]}
+                           ]
+      },
+      {"id":6,
+       "name":"Delete created group.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.delete_group((select max(id) from npa.npa_group)) ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":500}
+                           ]
+      },
+      {"id":7,
+       "name":"Deleted group not exists with is_deleted = 0.",
+       "call_type":"select",
+       "ret_type":"dataset",
+       "call":"select * from npa.npa_group ng where ng.is_deleted=0 and ng.name='test_up_grp_name_2'",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":0},
+                            {"condition":"full_time_ms", "checkValue":1000}
+                           ]
+      },
+      {"id":8,
+       "name":"Create new npa group test_up_grp_name_3 for tesing add-remove npa.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.save_group(p_group_id => null, p_name => 'test_up_grp_name_3', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array[38518], c_editors => array[37317], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array[37317,38518],c_flt_monitoring => array[37317,38518],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":100}
+                           ]
+      },
+      {"id":9,
+       "name":"Add first random npa to group",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.add_npa_to_group((select max(id) from npa.npa_group ng where ng.is_deleted =0 and ng.name ='test_up_grp_name_3'),(select ne.id from npa.npa_entity ne where ne.is_deleted =0 limit 1))",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":100}
+                           ]
+      },
+      {"id":10,
+       "name":"Add second random npa to group",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.add_npa_to_group((select max(id) from npa.npa_group ng where ng.is_deleted =0 and ng.name ='test_up_grp_name_3'),(select ne.id-1 from npa.npa_entity ne where ne.is_deleted =0 limit 1))",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":100}
+                           ]
+      },
+      {"id":11,
+       "name":"Count npa in group.",
+       "call_type":"select",
+       "ret_type":"dataset",
+       "call":"select sum(1) as cnt from npa.ref_npa_group_npa rng where rng.group_id = (select max(id) from npa.npa_group ng where ng.is_deleted =0 and ng.name ='test_up_grp_name_3')",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":100},
+                            {"condition":"fields_exists","fields":["cnt"]}
+                           ]
+      },
+      {"id":12,
+       "name":"Delete group - test_up_grp_name_3.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.delete_group((select max(id) from npa.npa_group ng where ng.is_deleted =0 and ng.name ='test_up_grp_name_3'))",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":100}
+                           ]
+      },
+      {"id":13,
+       "name":"Check - get_group_flt_stage_date.",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_group_flt_stage_date(p_user_id => 37317, p_group_id => 3);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":100},
+                            {"condition":"full_time_ms", "checkValue":500},
+                            {"condition":"fields_exists","fields":["stage_date","is_selected"]}
+                           ]
+      },
+      {"id":14,
+       "name":"Check - get_group_flt_view.",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_group_flt_view(p_user_id => 37317, p_group_id => 1);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":4},
+                            {"condition":"rows_lt",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":500},
+                            {"condition":"fields_exists","fields":["id","parent_id","name","is_selected"]}
+                           ]
+      },
+      {"id":15,
+       "name":"Check - get_group_flt_competence.",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_group_flt_competence(p_user_id => 37317, p_group_id =>1);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":5},
+                            {"condition":"rows_lt",      "checkValue":100},
+                            {"condition":"full_time_ms", "checkValue":500},
+                            {"condition":"fields_exists","fields":["id","parent_id","name","level","is_selected"]}
+                           ]
+      },
+      {"id":16,
+       "name":"Check - get_group_flt_monitoring.",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_group_flt_monitoring(p_user_id => 37317, p_group_id =>1);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":5},
+                            {"condition":"rows_lt",      "checkValue":100},
+                            {"condition":"full_time_ms", "checkValue":500},
+                            {"condition":"fields_exists","fields":["id","parent_id","name","level","is_selected"]}
+                           ]
+      },
+      {"id":17,
+       "name":"Check - get_group_flt_main_dev.",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_group_flt_main_dev(p_user_id => 37317, p_group_id => 1);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":50},
+                            {"condition":"rows_lt",      "checkValue":500},
+                            {"condition":"full_time_ms", "checkValue":1000},
+                            {"condition":"fields_exists","fields":["id","name","is_selected"]}
+                           ]
+      },
+      {"id":18,
+       "name":"Check - get_colums_for_group.",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_colums_for_group(p_user_id => 37317, p_group_id => 3);",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":12},
+                            {"condition":"full_time_ms", "checkValue":400},
+                            {"condition":"fields_exists","fields":["id","column_text","is_selected"]}
+                           ]
+      },
+      {"id":19,
+       "name":"Npa list from system group with pagination. (1) 30 npa",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":20,
+       "name":"Npa list from system group with pagination. (2) 300 npa",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 300); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":300},
+                            {"condition":"exec_time_ms", "checkValue":350},
+                            {"condition":"fetch_time_ms", "checkValue":2500},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":21,
+       "name":"Npa list from system group with pagination. (3) no npa in result",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 999999, p_items_cnt=> 1000); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":0},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":22,
+       "name":"Npa list - check p_search_text in system group",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 300, p_search_text => 'фтс' ); ",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":3},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":23,
+       "name":"Npa list - check p_search_text and filters by view in system group",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 300, p_search_text => 'фтс' ,c_flt_view => '{5}'::integer[]);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":30,
+       "name":"Npa list from system group with pagination. (4) c_flt_stage_date",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id=>37317,p_group_id=>1,p_page_num=>1,p_items_cnt=>30, c_flt_stage_date=>'{01.07.2015}'::text[],c_flt_view=>'{5}'::integer[]);",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":31,
+       "name":"Npa list from system group with pagination. (5) main_dev",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id=>37317,p_group_id=>1,p_page_num=>1,p_items_cnt=>300, c_flt_stage_date=>'{01.07.2015}'::text[],c_flt_view=>'{5}'::integer[],c_flt_main_dev=>'{12,33}'::integer[]);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":32,
+       "name":" - need optimization - Npa list from system group with pagination. (6) c_flt_competence",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id=>37317,p_group_id=>1,p_page_num => 1,p_items_cnt=> 300, c_flt_view=>'{5}'::integer[],c_flt_competence=>'{37317_usr,2_oiv,38518_usr,38522_usr,1_oiv}'::text[]);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":10},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":33,
+       "name":"Npa list from system group with pagination. (7) c_flt_monitoring",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id=>37317,p_group_id=>1,p_page_num => 1,p_items_cnt=> 300, c_flt_view=>'{5}'::integer[],c_flt_monitoring=>'{37317_usr,1_oiv}'::text[]);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":0},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":34,
+       "name":"Npa list from system group with pagination. (8) p_flt_warning,p_flt_alert",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317,p_group_id => 1, p_page_num => 1, p_items_cnt=> 300, p_flt_warning => 1,p_flt_alert => 1,c_flt_view=> '{5}'::integer[]);",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":35,
+       "name":"There is no undeleted main developer",
+       "call_type":"select",
+       "ret_type":"dataset",
+       "call":"select 1 as md_exists from npa.d_main_developer dmd  where dmd.is_deleted=0 and dmd.name = 'XYZ_test_md_1'",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":0},
+                            {"condition":"full_time_ms", "checkValue":300}
+                           ]
+      },
+      {"id":36,
+       "name":"Create new test main developer.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.save_d_main_developer(p_user_id => 4682,p_d_main_developer_id => null,p_name => 'XYZ_test_md_1',p_is_deleted => 0)",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":300}
+                           ]
+      },
+      {"id":37,
+       "name":"Check that created main developer exists and undeleted.",
+       "call_type":"select",
+       "ret_type":"dataset",
+       "call":"select 1 as md_exists from npa.d_main_developer dmd where dmd.is_deleted =0 and dmd.name = 'XYZ_test_md_1' and dmd.id = (select max(md.id) from npa.d_main_developer md)",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":300},
+                            {"condition":"fields_exists","fields":["md_exists"]}
+                           ]
+      },
+      {"id":38,
+       "name":"Delete created main developer.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.save_d_main_developer(p_user_id => 4682,p_d_main_developer_id => (select max(md.id) from npa.d_main_developer md),p_name => 'XYZ_test_md_1',p_is_deleted => 1);",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":300}
+                           ]
+      },
+      {"id":39,
+       "name":"Check that main dev deleted.",
+       "call_type":"select",
+       "ret_type":"dataset",
+       "call":"select 1 as md_exists from npa.d_main_developer dmd where dmd.is_deleted = 1 and dmd.name = 'XYZ_test_md_1' and dmd.id = (select max(md.id) from npa.d_main_developer md)",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":300},
+                            {"condition":"fields_exists","fields":["md_exists"]}
+                           ]
+      },
+      {"id":40,
+       "name":"Check EXCEPTION Create new test main developer - XYZ_test_md_3.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.save_d_main_developer(p_user_id => 4682,p_d_main_developer_id => null,p_name => 'XYZ_test_md_5', p_is_deleted => 0)",
+       "success_condition":[
+                            {"condition":"exec_exception"}
+                           ]
+      },
+      {"id":41,
+       "name":"Check that created main developer exists and undeleted.",
+       "call_type":"select",
+       "ret_type":"dataset",
+       "call":"select 1 as md_exists from npa.d_main_developer dmd where dmd.is_deleted =0 and dmd.name = 'XYZ_test_md_3'",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":300},
+                            {"condition":"fields_exists","fields":["md_exists"]}
+                           ]
+      },
+      {"id":42,
+       "name":"Reference NPA and search criterion - npa not exist.",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_refs_npa_search_crits(p_user_id => 37317, p_npa_id => 123456789);",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":0},
+                            {"condition":"full_time_ms", "checkValue":300},
+                            {"condition":"fields_exists","fields":["date_search","rule_id","matching_by"]}
+                           ]
+      },
+      {"id":43,
+       "name":"Reference NPA and search criterion - npa has refs to S.C.",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_refs_npa_search_crits(p_user_id => 37317, p_npa_id => (select nsr.id_npa_entity from npa.npa_search_results nsr limit 1));",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":0},
+                            {"condition":"full_time_ms", "checkValue":300},
+                            {"condition":"fields_exists","fields":["date_search","rule_id","matching_by"]}
+                           ]
+      },
+      {"id":44,
+       "name":"Check SORT (1) get_npa_list_in_group sorting by - warning asc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'warning', p_sort_dest => 'asc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms",  "checkValue":8000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":45,
+       "name":"Check SORT (2) get_npa_list_in_group sorting by - warning desc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'warning', p_sort_dest => 'desc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms",  "checkValue":8000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":46,
+       "name":"Check SORT (3) get_npa_list_in_group sorting by - alert asc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'alert', p_sort_dest => 'asc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms",  "checkValue":8000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":47,
+       "name":"Check SORT (4) get_npa_list_in_group sorting by - alert desc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'alert', p_sort_dest => 'desc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":8000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":48,
+       "name":"Check SORT (5) get_npa_list_in_group sorting by - s_number asc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'s_number', p_sort_dest => 'asc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":8000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":49,
+       "name":"Check SORT (6) get_npa_list_in_group sorting by - s_number desc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'s_number', p_sort_dest => 'desc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":10000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":50,
+       "name":"Check SORT (7) get_npa_list_in_group sorting by dates - stage_names asc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'stage_names', p_sort_dest => 'asc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":8000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":51,
+       "name":"Check SORT (8) get_npa_list_in_group sorting by dates - stage_names desc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'stage_names', p_sort_dest => 'desc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":8000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":52,
+       "name":"Check SORT (9) get_npa_list_in_group sorting by - change_info desc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'change_info', p_sort_dest => 'desc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":10000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":53,
+       "name":"Check SORT (10) get_npa_list_in_group sorting by - change_info desc ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'change_info', p_sort_dest => 'desc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":30},
+                            {"condition":"full_time_ms", "checkValue":10000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":54,
+       "name":"Check EXCEPTION -1- get_npa_list_in_group ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'xyz', p_sort_dest => 'desc'); ",
+       "success_condition":[
+                             {"condition":"exec_exception"}
+                           ]
+      },
+      {"id":55,
+       "name":"Check EXCEPTION -2- get_npa_list_in_group ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 1, p_items_cnt=> 30, p_sort_field =>'warning', p_sort_dest => 'ascasc'); ",
+       "success_condition":[
+                             {"condition":"exec_exception"}
+                           ]
+      },
+      {"id":56,
+       "name":"Check EXCEPTION -3- get_npa_list_in_group  integer out of range",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 99999, p_items_cnt=> 99999); ",
+       "success_condition":[
+                             {"condition":"exec_exception"}
+                           ]
+      },
+      {"id":57,
+       "name":"Check EXCEPTION -3- get_npa_list_in_group  integer out of range",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => 1, p_page_num => 9999, p_items_cnt=> 9999); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":0},
+                            {"condition":"full_time_ms", "checkValue":3000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","competence_users","monitoring_users","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":58,
+       "name":"Check Npa search in group - Test 1 of 5, create test group.",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.save_group(p_group_id => null,p_name => 'For_up_test_search_npa',p_description => null,p_user_id => 37317,p_warning => null,p_alert => null,c_readers => array[37317],c_editors => array[37317],c_flt_stage_date => array['01.07.2015'],c_flt_view => array[5],c_columns_id => array[1,2,3,4,5,6,7,10,11,12]); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms",  "checkValue":5000}
+                           ]
+      },
+      {"id":59,
+       "name":"Check Npa search in group - Test 2 of 5, search nap - 1 case. ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => (select max(id) from npa.npa_group ng where ng.is_deleted=0 and ng.name ='For_up_test_search_npa'), p_page_num => 1, p_items_cnt=> 50, p_search_text => '00/00/07-15/000',p_sort_field => 's_number',p_sort_dest => 'desc'); ",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":10},
+                            {"condition":"rows_lt",      "checkValue":30},
+                            {"condition":"full_time_ms",  "checkValue":4000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":60,
+       "name":"Check Npa search in group - Test 3 of 5, search nap - 2 case. ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => (select max(id) from npa.npa_group ng where ng.is_deleted=0 and ng.name ='For_up_test_search_npa'), p_page_num => 1, p_items_cnt=> 50, p_search_text => '15/000',p_sort_field => 's_number',p_sort_dest => 'asc'); ",
+       "success_condition":[
+                            {"condition":"rows_gt",      "checkValue":10},
+                            {"condition":"rows_lt",      "checkValue":30},
+                            {"condition":"full_time_ms",  "checkValue":4000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":61,
+       "name":"Check Npa search in group - Test 4 of 5, search nap - 3 case. ",
+       "call_type":"select_function",
+       "ret_type":"cursor",
+       "call":"select npa.get_npa_list_in_group(p_user_id => 37317, p_group_id => (select max(id) from npa.npa_group ng where ng.is_deleted=0 and ng.name ='For_up_test_search_npa'), p_page_num => 1, p_items_cnt=> 50, p_search_text => '1234',p_sort_field => 's_number',p_sort_dest => 'desc'); ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":0},
+                            {"condition":"full_time_ms",  "checkValue":2000},
+                            {"condition":"fields_exists","fields":["id","warning","alert","s_number","view_names","name","npa_content","stage_names","npa_main_developer","change_info","last_comment_text","rn","total"]}
+                           ]
+      },
+      {"id":62,
+       "name":"Check Npa search in group - Test 5 of 5, delete test group. ",
+       "call_type":"select_function",
+       "ret_type":"integer_value",
+       "use_commit":true,
+       "call":"select npa.delete_group((select max(id) from npa.npa_group ng where ng.is_deleted=0 and ng.name ='For_up_test_search_npa')) ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms",  "checkValue":500}
+                           ]
+      },
+      {"id":63,
+       "name":"Create new npa group.",
+       "call_type":"dml_sql",
+       "ret_type":"affected_rows",
+       "use_commit":true,
+       "call":"update npa.npa_group ng set is_deleted=0 where ng.id=16",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":1},
+                            {"condition":"full_time_ms", "checkValue":250}
+                           ]
+      },
+      {"id":64,
+       "name":"Check EXCEPTION unique undeleted group names",
+       "call_type":"dml_sql",
+       "ret_type":"affected_rows",
+       "call":"insert into npa.npa_group(name,created_user_id) select concat('group_up_test_grp-',1),37317 from generate_series(1,3) i; ",
+       "success_condition":[
+                             {"condition":"exec_exception"}
+                           ]
+      },
+      {"id":65,
+       "name":"Insert new 5 groups",
+       "call_type":"dml_sql",
+       "ret_type":"affected_rows",
+       "use_commit":true,
+       "call":"insert into npa.npa_group(name,created_user_id) select concat('group_up_test_grp-',i),37317 from generate_series(1,5) i; ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":5},
+                            {"condition":"full_time_ms", "checkValue":250}
+                           ]
+      },
+      {"id":66,
+       "name":"Delete created 5 groups",
+       "call_type":"dml_sql",
+       "ret_type":"affected_rows",
+       "use_commit":true,
+       "call":" delete from npa.npa_group ng where ng.name like 'group_up_test_grp-%'; ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":5},
+                            {"condition":"full_time_ms", "checkValue":250}
+                           ]
+      },
+      {"id":70,
+       "name":"Test that group does not exist.",
+       "call_type":"select",
+       "ret_type":"dataset",
+       "call":"select 1 as res from npa.npa_group ng where ng.name ='xyz123xyz' ",
+       "success_condition":[
+                            {"condition":"rows_eq",      "checkValue":0},
+                            {"condition":"full_time_ms", "checkValue":1000},
+                            {"condition":"fields_exists","fields":["res"]}
+                           ]
+      }
+      ]      
+  }

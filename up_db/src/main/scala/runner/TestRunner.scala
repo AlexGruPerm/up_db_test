@@ -4,7 +4,7 @@ import common.types.{SessionId, TestExecutionResult, TestInRepo}
 import data.ImplTestsRepo
 import db.{jdbcSession, jdbcSessionImpl, pgSess}
 import org.postgresql.jdbc.PgResultSet
-import tmodel.{TestsMeta, cursor, dataset, func_inout_cursor, integer_value, select, select_function}
+import tmodel.{TestsMeta, affected_rows, cursor, dataset, dml_sql, func_inout_cursor, integer_value, select, select_function}
 import zio.metrics.{Metric, MetricLabel}
 import zio.{Task, UIO, ZIO, ZLayer}
 import common.types._
@@ -110,10 +110,28 @@ import scala.reflect.internal.ClassfileConstants.instanceof
           val tFetch = System.currentTimeMillis
           TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
         }
-        //todo: add in all functions as a new function call.
-/*        if (test.use_commit.getOrElse(false)) {
-          connection.commit()
-        }*/
+        makeCommit(test.use_commit, connection)
+        stmt.close()
+        connection.close()
+        res
+      }
+      execDbCallCatched = catchAllErrs(execDbCall)
+      _ <- execCallUpdateTestInRepo(execDbCallCatched,test)
+    } yield ()
+
+    private def exec_dml_sql(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
+      _ <- ZIO.unit
+      connection = pgses.sess
+      execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
+        val stmt = connection.createStatement()
+        val tBegin = System.currentTimeMillis
+        val rowsAffected: Int = stmt.executeUpdate(test.call);
+        val tExec = System.currentTimeMillis
+        val res: TestExecutionResult = {
+          val (cols: Columns, rows: ListRows) = (IndexedSeq[Column](),List[IndexedSeq[String]]())
+          val tFetch = System.currentTimeMillis
+          TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rowsAffected)
+        }
         makeCommit(test.use_commit, connection)
         stmt.close()
         connection.close()
@@ -169,6 +187,8 @@ import scala.reflect.internal.ClassfileConstants.instanceof
         countAllRequests("func_inout_cursor")
       case (_: select.type, _: dataset.type) => exec_select_dataset(conn,test) @@
         countAllRequests("select_dataset")
+      case (_: dml_sql.type, _: affected_rows.type) => exec_dml_sql(conn,test) @@
+        countAllRequests("dml_sql")
       case _ => ZIO.unit
     }
   } yield ()

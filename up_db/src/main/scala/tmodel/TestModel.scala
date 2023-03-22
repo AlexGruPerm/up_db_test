@@ -32,6 +32,9 @@ sealed trait CallType
   case object func_inout_cursor extends CallType{
     override def toString: String = "func_inout_cursor"
   }
+  case object dml_sql extends CallType{
+    override def toString: String = "dml_sql"
+  }
 
 sealed trait RetType
   case object cursor extends RetType{
@@ -42,6 +45,9 @@ sealed trait RetType
   }
   case object integer_value extends RetType{
     override def toString: String = "integer_value"
+  }
+  case object affected_rows extends RetType{
+    override def toString: String = "affected_rows"
   }
 
 sealed trait SucCond
@@ -80,7 +86,7 @@ sealed trait TestState
   case object testStateExecuting extends TestState
 
 
-  //todo: late change Int to Long
+  //todo: later change Int to Long
   case class SucCondElement(condition: SucCond,
                             checkValue: Option[Int],
                             fields: Option[List[String]],
@@ -156,6 +162,7 @@ sealed trait TestState
       case "function" => function
       case "select_function" => select_function
       case "func_inout_cursor" => func_inout_cursor
+      case "dml_sql" => dml_sql
       case anyValue => throw new Exception(s"Invalid value in field call_type = $anyValue")
     }
 
@@ -164,6 +171,7 @@ sealed trait TestState
       case "cursor" => cursor
       case "dataset" => dataset
       case "integer_value" => integer_value
+      case "affected_rows" => affected_rows
       case anyValue => throw new Exception(s"Invalid value in field ret_type = $anyValue")
     }
 
