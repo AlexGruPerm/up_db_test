@@ -141,7 +141,33 @@ sealed trait TestState
                    call: String,
                    success_condition: Option[List[SucCondElement]],
                    isEnabled: Boolean = false
-                 )
+                 ){
+
+    private def checkScType(sc: SucCondElement) =
+      sc.condition  match {
+        case _ : exec_exception.type => true
+        case _ => false
+      }
+
+    private def isExistSuccCondExecException(sc: List[SucCondElement]): Boolean = {
+      sc.exists(sc => checkScType(sc))
+    }
+
+    val listSC : List[SucCondElement] =  success_condition.getOrElse(List[SucCondElement]())
+
+    val scErrorText: Option[String] =
+      if (isExistSuccCondExecException(listSC) && listSC.size>1)
+        Some("Condition = exec_exception must be single condition in the success_condition list.")
+      else
+        None
+
+    scErrorText match {
+      case Some(err) => throw new Exception(err)
+      case None => ()
+    }
+
+
+  }
 
   case class TestModel(meta: TestsMeta, tests: Option[List[Test]]) {
       val listID : List[Int] = tests.getOrElse(List[Test]()).map(t => t.id)
