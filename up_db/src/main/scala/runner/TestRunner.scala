@@ -205,7 +205,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
         MetricLabel("method", method)
       )
 
-  def run: ZIO[Any, Exception, Unit] = for {
+  def run(): ZIO[Any, Exception, Unit] = for {
       testsSetOpt <- tr.lookup(sid)
       _ <- testsSetOpt match {
         case Some(testsSet) =>

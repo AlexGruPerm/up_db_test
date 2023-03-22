@@ -2,7 +2,7 @@ name := "up_db_test"
 
 ThisBuild / organization := "yakushev"
 ThisBuild / version      := "0.0.1"
-ThisBuild / scalaVersion := "2.12.15"
+ThisBuild / scalaVersion := "2.12.15"//"2.13.10"
 
   val Versions = new {
     val zio        = "2.0.5"
@@ -85,7 +85,7 @@ ThisBuild / scalaVersion := "2.12.15"
      ++ Resolver.sonatypeOssRepos("releases")
   )
 
-  addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full)
+  //addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full)
 
   up_db / assembly / assemblyMergeStrategy := {
     case PathList("module-info.class") => MergeStrategy.discard
