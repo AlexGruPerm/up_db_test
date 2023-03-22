@@ -153,19 +153,54 @@ sealed trait TestState
       sc.exists(sc => checkScType(sc))
     }
 
-    val listSC : List[SucCondElement] =  success_condition.getOrElse(List[SucCondElement]())
-
-    val scErrorText: Option[String] =
-      if (isExistSuccCondExecException(listSC) && listSC.size>1)
+    private def checkSucCondEcexException(scList: List[SucCondElement]): Option[String] =
+      if (isExistSuccCondExecException(scList) && scList.size>1)
         Some("Condition = exec_exception must be single condition in the success_condition list.")
-      else
-        None
+      else None
 
+    private def checkCallTypeRetType(ct: CallType, rt: RetType): Option[String] = {
+      ct match {
+        case _:select_function.type =>
+          rt match {
+            case _:cursor.type  => None
+            case _:integer_value.type  => None
+            case _ => Some(s"TestID=[$id] For call type (select_function) is only applicable ret_type: cursor, integer_value ")
+          }
+        case _:select.type =>
+        rt match {
+          case _: dataset.type => None
+          case _ => Some(s"TestID=[$id] For call type (select) is only applicable ret_type: dataset ")
+        }
+        case _:func_inout_cursor.type =>
+          rt match {
+            case _: cursor.type => None
+            case _ => Some(s"TestID=[$id] For call type (func_inout_cursor) is only applicable ret_type: cursor ")
+          }
+        case _:dml_sql.type =>
+          rt match {
+            case _: affected_rows.type => None
+            case _ => Some(s"TestID=[$id] For call type (dml_sql) is only applicable ret_type: affected_rows ")
+          }
+        case _ => None
+      }
+    }
+
+
+
+    val listSC : List[SucCondElement] =  success_condition.getOrElse(List[SucCondElement]())
+    val listOfCheckFuncs: List[List[SucCondElement] => Option[String]] = List(checkSucCondEcexException)
+    val scErrorText: Option[String] = listOfCheckFuncs.view.flatMap(_(listSC)).headOption
     scErrorText match {
       case Some(err) => throw new Exception(err)
       case None => ()
     }
 
+    val listOfCheckFuncsCtRt: List[(CallType,RetType) => Option[String]] = List(checkCallTypeRetType)
+    val ctrtErrorText: Option[String] = listOfCheckFuncsCtRt.view.flatMap(_(call_type,ret_type)).headOption
+    ctrtErrorText match {
+      case Some(err) => throw new Exception(err)
+      case None => ()
+    }
 
   }
 
