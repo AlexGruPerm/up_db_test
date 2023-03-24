@@ -5,13 +5,12 @@ ThisBuild / version      := "0.0.1"
 ThisBuild / scalaVersion := "2.13.10"
 
   val Versions = new {
-    val zio        = "2.0.5"
-    val zio_config = "3.0.7"
-    val zio_http   = "0.0.4"
-    val zio_json   = "0.3.0-RC11"
-    val pgVers     = "42.5.3"
-    val dbcp2Vers = "2.9.0"
-    val zio_metrics = "2.0.6"
+    val zio         = "2.0.10"     // "2.0.5"
+    val zio_config  = "4.0.0-RC14" // "3.0.7"
+    val zio_http    = "0.0.5"      // "0.0.4"
+    val zio_json    = "0.5.0"      // "0.3.0-RC11"
+    val pgVers      = "42.6.0"     // "42.5.3"
+    val zio_metrics = "2.0.7"      // "2.0.6"
   }
 
   // PROJECTS
@@ -48,10 +47,8 @@ ThisBuild / scalaVersion := "2.13.10"
       val zioDep = List(zio, zio_conf,zio_conf_typesafe,zio_conf_magnolia, zio_http, zio_json, zio_metrics )
 
       val pg = "org.postgresql" % "postgresql" % Versions.pgVers
-      val dbcp2 = "org.apache.commons" % "commons-dbcp2" % Versions.dbcp2Vers
 
-      val dbDep = List(pg, dbcp2)
-
+      val dbDep = List(pg)
     }
 
   val commonDependencies = {
@@ -84,8 +81,6 @@ ThisBuild / scalaVersion := "2.13.10"
      ++ Resolver.sonatypeOssRepos("public")
      ++ Resolver.sonatypeOssRepos("releases")
   )
-
-  //addCompilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full)
 
   up_db / assembly / assemblyMergeStrategy := {
     case PathList("module-info.class") => MergeStrategy.discard

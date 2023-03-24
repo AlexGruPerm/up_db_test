@@ -5,7 +5,7 @@ import data.ImplTestsRepo
 import webui.{PrometheusPublisherApp, WebUiApp}
 import zio.http.Server
 import zio.http._
-import zio.http.ServerConfig.LeakDetectionLevel
+//import zio.http.ServerConfig.LeakDetectionLevel
 import zio.metrics.connectors.{MetricsConfig, prometheus}
 import zio.{ZIO, ZLayer, durationInt}
 
@@ -17,7 +17,7 @@ object webLogic {
     conf <- ZIO.service[WebUiConfig]
     config = ServerConfig.default
       .port(conf.port)
-      .leakDetection(LeakDetectionLevel.PARANOID)
+      //.leakDetection(LeakDetectionLevel.PARANOID)
       .maxThreads(conf.nThreads)
     _ <-  (Server.install(WebUiApp.app ++ PrometheusPublisherApp()).flatMap { port =>
       ZIO.logInfo(s"Started server on port: $port with nThreads=${conf.nThreads}")
