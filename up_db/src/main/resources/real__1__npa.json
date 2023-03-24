@@ -11,7 +11,7 @@
        "call_type":"select_function",
        "ret_type":"integer_value",
        "use_commit":true,
-       "call":"select npa.save_group(p_group_id => null, p_name => 'test_up_grp_name_1', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array[38518], c_editors => array[37317], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array[37317,38518],c_flt_monitoring => array[37317,38518],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
+       "call":"select npa.save_group(p_group_id => null, p_name => 'test_up_grp_name_1', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array['38518_usr'], c_editors => array['37317_usr'], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array['37317_usr','38518_usr'],c_flt_monitoring => array['37317_usr','38518_usr'],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
        "success_condition":[
                             {"condition":"rows_eq",      "checkValue":1},
                             {"condition":"full_time_ms", "checkValue":250}
@@ -22,7 +22,7 @@
        "call_type":"select_function",
        "ret_type":"integer_value",
        "use_commit":true,
-       "call":"select npa.save_group(p_group_id => null, p_name => 'test_up_grp_name_1', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array[38518], c_editors => array[37317], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array[37317,38518],c_flt_monitoring => array[37317,38518],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
+       "call":"select npa.save_group(p_group_id => null, p_name => 'test_up_grp_name_1', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array['38518_usr'], c_editors => array['37317_usr'], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array['37317_usr','38518_usr'],c_flt_monitoring => array['37317_usr','38518_usr'],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
        "success_condition":[
                              {"condition":"exec_exception"}
                            ]
@@ -43,7 +43,7 @@
        "call_type":"select_function",
        "ret_type":"integer_value",
        "use_commit":true,
-       "call":"select npa.save_group(p_group_id => (select max(id) from npa.npa_group), p_name => 'test_up_grp_name_2', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array[38518], c_editors => array[37317], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array[37317,38518],c_flt_monitoring => array[37317,38518],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
+       "call":"select npa.save_group(p_group_id => (select max(id) from npa.npa_group), p_name => 'test_up_grp_name_2', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array['38518_usr'], c_editors => array['37317_usr'], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array['37317_usr','38518_usr'],c_flt_monitoring => array['37317_usr','38518_usr'],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
        "success_condition":[
                             {"condition":"rows_eq",      "checkValue":1},
                             {"condition":"full_time_ms", "checkValue":9000}
@@ -86,7 +86,7 @@
        "call_type":"select_function",
        "ret_type":"integer_value",
        "use_commit":true,
-       "call":"select npa.save_group(p_group_id => null, p_name => 'test_up_grp_name_3', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array[38518], c_editors => array[37317], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array[37317,38518],c_flt_monitoring => array[37317,38518],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
+       "call":"select npa.save_group(p_group_id => null, p_name => 'test_up_grp_name_3', p_description => 'Системная группа проектов', p_user_id => 37317, p_warning => null, p_alert => null, c_readers => array['38518_usr'], c_editors => array['37317_usr'], c_flt_stage_date => array['14.10.2022','13.10.2022','16.11.2022'], c_flt_view => array[5,6,9,7],c_flt_competence => array['37317_usr','38518_usr'],c_flt_monitoring => array['37317_usr','38518_usr'],c_flt_main_dev  => array[134,32,23,31],c_columns_id => array[1,8]);",
        "success_condition":[
                             {"condition":"rows_eq",      "checkValue":1},
                             {"condition":"full_time_ms", "checkValue":100}
@@ -567,10 +567,10 @@
        "call_type":"select_function",
        "ret_type":"integer_value",
        "use_commit":true,
-       "call":"select npa.save_group(p_group_id => null,p_name => 'For_up_test_search_npa',p_description => null,p_user_id => 37317,p_warning => null,p_alert => null,c_readers => array[37317],c_editors => array[37317],c_flt_stage_date => array['01.07.2015'],c_flt_view => array[5],c_columns_id => array[1,2,3,4,5,6,7,10,11,12]); ",
+       "call":"select npa.save_group(p_group_id => null,p_name => 'For_up_test_search_npa',p_description => null,p_user_id => 37317,p_warning => null,p_alert => null,c_readers => array['37317_usr'],c_editors => array['37317_usr'],c_flt_stage_date => array['01.07.2015'],c_flt_view => array[5],c_columns_id => array[1,2,3,4,5,6,7,10,11,12]); ",
        "success_condition":[
                             {"condition":"rows_eq",      "checkValue":1},
-                            {"condition":"full_time_ms",  "checkValue":5000}
+                            {"condition":"full_time_ms", "checkValue":5000}
                            ]
       },
       {"id":59,
