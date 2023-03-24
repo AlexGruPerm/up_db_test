@@ -55,7 +55,8 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
   def create(testModel: TestModel) :Task[SessionId] = for {
     sid <- Random.nextUUID.map(_.toString)
     _ <- ZIO.logInfo(s"ImplTestsRepo.create generated sid = $sid")
-    _ <- ref.update(test => test + (sid -> TestModelRepo(testModel)))
+    /*_ <- ref.update(test => test + (sid -> TestModelRepo(testModel)))*/
+    _ <- ref.update(test => test.concat(List(sid -> TestModelRepo(testModel))))
     _ <- ZIO.logInfo(s"ref COUNT = ${ref.get.map(_.size)}")
   } yield sid
 
@@ -95,21 +96,6 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
       ))
       }
     res <- ZIO.succeed(res)
-
-    /*    lst <- ref.get.map { m => m.map {
-      case (k, v) =>
-        (k,
-          TestsStatus(
-            v.tests.getOrElse(List[TestInRepo]()).size,
-            v.tests.getOrElse(List[TestInRepo]()).count(t => t.isEnabled),
-            v.tests.getOrElse(List[TestInRepo]()).count(t => !t.isEnabled),
-            v.tests.getOrElse(List[TestInRepo]()).count(t => t.isExecuted),
-            v.tests.getOrElse(List[TestInRepo]()).count(t => t.testState == testStateSuccess),
-            v.tests.getOrElse(List[TestInRepo]()).count(t => t.testState == testStateFailure)
-            ))
-     }(collection.breakOut).toList
-    }
-   res <- ZIO.succeed(Some(checkTestRepoInfo(lst)))*/
   } yield res
 
 
@@ -118,8 +104,8 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
     _ <- test match {
       case Some(s) =>
         ref.update{
-          tests => tests +
-            (sid -> TestModelRepo(
+          tests => tests.concat(
+            List(sid -> TestModelRepo(
               s.meta,
               s.tests.map{
                 tr => tr.map{t =>
@@ -129,7 +115,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
                     t
                 }
               }
-            ))}
+            )))}
       case None => ZIO.unit
     }
   } yield ()
@@ -139,8 +125,8 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
     _ <- test match {
       case Some(s) =>
         ref.update{
-          tests => tests +
-            (sid -> TestModelRepo(
+          tests => tests.concat(
+            List(sid -> TestModelRepo(
               s.meta,
             s.tests.map{
               tr => tr.map{t =>
@@ -150,7 +136,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
                   t
               }
             }
-          ))}
+          )))}
       case None => ZIO.unit
     }
   } yield ()
@@ -166,8 +152,8 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
       case Some(s) =>
         //ZIO.logInfo(s"~~~DISABLE~~  ${testId}  ~~~~~~~~~~~~~~~~~~~~~~~") *>
         ref.update{
-          tests => tests +
-            (sid -> TestModelRepo(
+          tests => tests.concat(
+            List(sid -> TestModelRepo(
               s.meta,
               s.tests.map{
                 tr => tr.map{t =>
@@ -181,7 +167,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
                     t
                 }
               }
-            ))}
+            )))}
       case None => ZIO.unit
     }
   } yield ()
