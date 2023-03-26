@@ -1,6 +1,7 @@
 package runner
 
-import common.types.{SessionId, TestExecutionResult, TestInRepo}
+import common.{CallTimings, TestExecutionResult, TestInRepo}
+import common.types.SessionId
 import data.ImplTestsRepo
 import db.{jdbcSession, jdbcSessionImpl, pgSess}
 import org.postgresql.jdbc.PgResultSet

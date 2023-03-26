@@ -1,6 +1,7 @@
 package data
 
-import common.types.{SessionId, TestInRepo}
+import common.TestInRepo
+import common.types.SessionId
 import tmodel.{testStateFailure, testStateSuccess}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 

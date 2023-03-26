@@ -2,6 +2,8 @@ package common
 
 import tmodel.{CallType, RetType, SucCondElement, TestModel, TestState, TestsMeta, exec_exception, fields_exists, testStateFailure, testStateSuccess, testStateUndefined}
 import zio.http.html.{pre, td, _}
+import _root_.data.TestRepoTypes.TestID
+import common.types.Columns
 import zio.http.{Handler, Response}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
@@ -12,11 +14,29 @@ object types {
 
   type ColumnName = String
   type ColumnType = String
-  type Column = (ColumnName,ColumnType)
+  type Column = (ColumnName, ColumnType)
   type Columns = IndexedSeq[Column]
   type ListRows = List[IndexedSeq[String]]
+}
 
   case class CallTimings(tBegin: Long, tExec: Long, tFetch: Long)
+
+  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : Columns, rowCount: Int,
+                                 err: Option[TestExecutionException] = None)
+
+  object TestExecutionResult {
+    def apply(): TestExecutionResult =
+      TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0)
+
+    def apply(excType:String, errMsg: String): TestExecutionResult =
+      TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0,
+        err = Some(TestExecutionException(excType,errMsg)))
+
+    def apply(timings: CallTimings, cols: Columns, rowCount: Int): TestExecutionResult =
+      TestExecutionResult(timings.tFetch - timings.tBegin, timings.tFetch - timings.tExec,
+        timings.tExec - timings.tBegin, cols, rowCount)
+
+  }
 
   /**
    * success_condition - List of SucCondElement contains execution results in fields:
@@ -24,7 +44,7 @@ object types {
    * conditionResult: Option[Boolean] is this condition successful.
   */
   case class TestInRepo(
-                         id: Int,
+                         id: TestID,
                          name: String,
                          call_type: CallType,
                          ret_type: RetType,
@@ -48,6 +68,7 @@ object types {
       }
       testState
     }
+
 
     /**
      * Used for analyze executions results in testRes
@@ -187,7 +208,7 @@ object types {
       this.copy(tests = updatedTests)
     }
 
-    def enableOneTest(testId: Int): TestModelRepo = {
+    def enableOneTest(testId: TestID): TestModelRepo = {
       val updatedTests: Option[List[TestInRepo]] = tests.map{
         tr => tr.map {t=>
           if (t.id == testId)
@@ -198,7 +219,7 @@ object types {
       this.copy(tests = updatedTests)
     }
 
-    def disableOneTest(testId: Int): TestModelRepo = {
+    def disableOneTest(testId: TestID): TestModelRepo = {
       val updatedTests: Option[List[TestInRepo]] = tests.map{
         tr => tr.map {t=>
           if (t.id == testId)
@@ -219,7 +240,8 @@ object types {
 
     def apply(tm: TestModel) : TestModelRepo = {
       val testsInRepo: Option[List[TestInRepo]] = tm.tests.map{tst => tst.map{t =>
-        TestInRepo(t.id, t.name, t.call_type, t.ret_type, t.use_commit, t.call, t.success_condition, t.isEnabled, testStateUndefined , isExecuted= false,
+        TestInRepo(t.id, t.name, t.call_type, t.ret_type, t.use_commit, t.call, t.success_condition, t.isEnabled,
+          testStateUndefined , isExecuted= false,
           testRes = TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0))
       }}
       TestModelRepo(tm.meta, testsInRepo)
@@ -230,18 +252,6 @@ object types {
 
   case class TestExecutionException(exceptionType: String, exceptionMsg: String)
 
-  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : Columns, rowCount: Int, err: Option[TestExecutionException] = None)
 
-  object TestExecutionResult {
-    def apply(): TestExecutionResult =
-      TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0)
 
-    def apply(excType:String, errMsg: String): TestExecutionResult =
-      TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0,err = Some(TestExecutionException(excType,errMsg)))
 
-    def apply(timings: CallTimings, cols: Columns, rowCount: Int): TestExecutionResult =
-      TestExecutionResult(timings.tFetch - timings.tBegin, timings.tFetch - timings.tExec, timings.tExec - timings.tBegin, cols, rowCount)
-
-  }
-
-}

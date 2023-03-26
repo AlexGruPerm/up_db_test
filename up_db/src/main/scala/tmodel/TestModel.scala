@@ -1,6 +1,6 @@
 package tmodel
 
-import common.types.{TestExecutionException, TestExecutionResult, TestInRepo}
+import common.{TestExecutionException, TestExecutionResult, TestInRepo}
 import zio.http.html.div
 import zio.http.{Handler, Response}
 import zio.{Random, ZIO}

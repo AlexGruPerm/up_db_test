@@ -1,10 +1,16 @@
 package data
 
-import common.types.{SessionId, TestExecutionResult, TestInRepo, TestModelRepo}
+import common.{TestInRepo, TestModelRepo}
+import common.types.SessionId
+import data.TestRepoTypes.TestID
 import tmodel.{SucCondElement, TestModel, testStateFailure, testStateSuccess, testStateUndefined}
 
 import scala.collection.mutable
 import zio.{UIO, _}
+
+object TestRepoTypes{
+  type TestID = Int
+}
 
 trait TestsRepo {
 
@@ -36,12 +42,12 @@ trait TestsRepo {
   /**
    * Enable one test in the tests set identified by sid.
   */
-  def enableTest(sid: SessionId, id: Int):  UIO[Unit]
+  def enableTest(sid: SessionId, id: TestID):  UIO[Unit]
 
   /**
    * Disable one test in the tests set identified by sid.
    */
-  def disableTest(sid: SessionId, id: Int): UIO[Unit]
+  def disableTest(sid: SessionId, id: TestID): UIO[Unit]
 
   /**
    * Disable all tests in the tests set identified by sid.
@@ -91,8 +97,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
     }
   } yield ()
 
-  //todo: testId: Int => testId: TestID
-  def enableTest(sid: SessionId, testId: Int): UIO[Unit] = for {
+  def enableTest(sid: SessionId, testId: TestID): UIO[Unit] = for {
     test <- lookup(sid)
     _ <- test.fold(ZIO.unit) { testsSet =>
       ref.update {
@@ -100,11 +105,10 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
           tests.concat(
             List(sid -> TestModelRepo(testsSet.meta, testsSet.tests).enableOneTest(testId))
           )
-      }
-    }
+      }}
   } yield ()
 
-  def disableTest(sid: SessionId, testId: Int): UIO[Unit] = for {
+  def disableTest(sid: SessionId, testId: TestID): UIO[Unit] = for {
     test <- lookup(sid)
     _ <- test.fold(ZIO.unit) { testsSet =>
       ref.update {
@@ -112,16 +116,15 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
           tests.concat(
             List(sid -> TestModelRepo(testsSet.meta, testsSet.tests).disableOneTest(testId))
           )
-      }
-    }
+      }}
   } yield ()
 
   def disableAllTestAndClearExecRes(sid: SessionId): UIO[Unit] = for {
     testModelRepo <- lookup(sid)
     _ <- testModelRepo.fold(ZIO.unit) { test =>
-      ZIO.foreachDiscard(test.tests.getOrElse(List[TestInRepo]())) { t => disableTest(sid, t.id)
-      }
-    }
+      ZIO.foreachDiscard(test.tests.getOrElse(List[TestInRepo]())) { t =>
+        disableTest(sid, t.id)
+      }}
   } yield ()
 }
 
