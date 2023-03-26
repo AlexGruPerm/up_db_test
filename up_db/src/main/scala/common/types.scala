@@ -171,11 +171,42 @@ object types {
 
   case class TestModelRepo(meta: TestsMeta, tests: Option[List[TestInRepo]]){
 
+    private def uncheckConditions(success_condition: Option[List[SucCondElement]]): Option[List[SucCondElement]] =
+      success_condition.fold(Some(List[SucCondElement]())){
+        listSucCond => Some(listSucCond.map(sc => sc.uncheck()))
+      }
+
     def updateOneTest(testWithResults: TestInRepo): TestModelRepo ={
       val updatedTests: Option[List[TestInRepo]] =  tests.map{
         tr => tr.map {t=>
           if (t.id == testWithResults.id)
             testWithResults
+          else
+            t
+        }}
+      this.copy(tests = updatedTests)
+    }
+
+    def enableOneTest(testId: Int): TestModelRepo = {
+      val updatedTests: Option[List[TestInRepo]] = tests.map{
+        tr => tr.map {t=>
+          if (t.id == testId)
+            t.copy(isEnabled = true)
+          else
+            t
+        }}
+      this.copy(tests = updatedTests)
+    }
+
+    def disableOneTest(testId: Int): TestModelRepo = {
+      val updatedTests: Option[List[TestInRepo]] = tests.map{
+        tr => tr.map {t=>
+          if (t.id == testId)
+            t.copy(isEnabled = false,
+              isExecuted = false,
+              testState = testStateUndefined,
+              success_condition = uncheckConditions(t.success_condition),
+              testRes = TestExecutionResult())
           else
             t
         }}
