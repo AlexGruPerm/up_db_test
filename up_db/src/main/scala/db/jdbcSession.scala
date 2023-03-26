@@ -39,7 +39,6 @@ case class jdbcSessionImpl(cp: TestsMeta) extends jdbcSession {
         ZIO.fail(new Exception(e.getMessage +cp.urlMsg))
     }
 
-    //todo: refactor it and add prometheus metric for connect.
     _ <- ZIO.logInfo(s"  ") *>
       ZIO.logInfo(s"New connection =============== >>>>>>>>>>>>> ")
     sess <- sessEffect

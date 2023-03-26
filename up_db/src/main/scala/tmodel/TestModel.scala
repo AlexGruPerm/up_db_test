@@ -85,8 +85,6 @@ sealed trait TestState
   case object testStateFailure extends  TestState
   case object testStateExecuting extends TestState
 
-
-  //todo: later change Int to Long
   case class SucCondElement(condition: SucCond,
                             checkValue: Option[Int],
                             fields: Option[List[String]],

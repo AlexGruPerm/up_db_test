@@ -50,9 +50,7 @@ object WebUiApp {
     } yield resp
 
   import tmodel.EncDecTestModelImplicits._
-  /**
-   * todo: change response, if BadRerquest then JSON with error, if successful then HTML response.
-  */
+
   def getTestInfo(sid: SessionId, testId: Int): ZIO[ImplTestsRepo, IOException, Response] =
     for {
       _ <- ZIO.logInfo("getTestInfo ")
@@ -114,9 +112,6 @@ object WebUiApp {
       }
     } yield resp
 
-  /**
-   * todo: in JS move const tests_container = document.getElementById("test_list"); and for containers in global area
-  */
   private def startTestsLogic(testsToRun: TestsToRun): ZIO[ImplTestsRepo with TestRunner, Exception, Unit] = for {
     tr <- ZIO.service[ImplTestsRepo]
     _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
