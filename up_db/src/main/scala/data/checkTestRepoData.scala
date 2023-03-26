@@ -1,7 +1,10 @@
 package data
 
-import common.types.SessionId
+import common.types.{SessionId, TestInRepo}
+import tmodel.{testStateFailure, testStateSuccess}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
+
+case class checkTestRepoInfo(tests: TestsStatus)
 
 case class TestsStatus(total: Int,
                        enabled: Int,
@@ -11,9 +14,32 @@ case class TestsStatus(total: Int,
                        failure: Int,
                        successList: List[Int],
                        failureList: List[Int]
-                      )
+                      ){
+  def getCheckTestRepoInfo: checkTestRepoInfo = checkTestRepoInfo(this)
+}
 
-case class checkTestRepoInfo(tests: TestsStatus)
+object TestsStatus{
+   def undefined: TestsStatus =
+    apply(total = 0, enabled = 0, disabled = 0, executed = 0, success = 0, failure = 0,
+      successList = List[Int](), failureList = List[Int]())
+
+  def calculated(listTest: List[TestInRepo]) =
+    TestsStatus(
+      listTest.size,
+      listTest.count(t => t.isEnabled),
+      listTest.count(t => !t.isEnabled),
+      listTest.count(t => t.isExecuted),
+      listTest.count(t => t.testState == testStateSuccess),
+      listTest.count(t => t.testState == testStateFailure),
+      listTest.filter(t => t.testState
+      match {
+        case _: testStateSuccess.type => true
+        case _ => false})
+        .map(_.id),
+      listTest.filter(_.testState == testStateFailure).map(_.id)
+    )
+
+}
 
 object EncDeccheckTestRepoDataImplicits {
 

@@ -76,31 +76,11 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
     tests = test.flatMap(olt => olt.tests.map(t => t.filter(_.isEnabled==true)))
   } yield tests
 
-  private def getTestsOrEmptyList(tests: Option[List[TestInRepo]]): List[TestInRepo] =
-    tests.getOrElse(List[TestInRepo]())
-
-  //todo: eliminate v.tests.getOrElse(List[TestInRepo]())
   def checkTestRepoData(sid: SessionId): UIO[Option[checkTestRepoInfo]] = for {
     tests <- lookup(sid)
-    res = tests.map{v =>
-      checkTestRepoInfo(TestsStatus(
-        getTestsOrEmptyList(v.tests).size,
-        getTestsOrEmptyList(v.tests).count(t => t.isEnabled),
-        getTestsOrEmptyList(v.tests).count(t => !t.isEnabled),
-        getTestsOrEmptyList(v.tests).count(t => t.isExecuted),
-        getTestsOrEmptyList(v.tests).count(t => t.testState == testStateSuccess),
-        getTestsOrEmptyList(v.tests).count(t => t.testState == testStateFailure),
-        getTestsOrEmptyList(v.tests).filter(t => t.testState
-        match {
-          case _: testStateSuccess.type => true
-          case _ => false})
-          .map(_.id),
-        v.tests.getOrElse(List[TestInRepo]()).filter(_.testState == testStateFailure).map(_.id)
-      ))
-      }
+    res = tests.map(v => v.tests.fold(TestsStatus.undefined)(TestsStatus.calculated).getCheckTestRepoInfo)
     res <- ZIO.succeed(res)
   } yield res
-
 
   def updateTestWithResults(sid: SessionId, testWithResults: TestInRepo): UIO[Unit] = for {
     test <- lookup(sid)
