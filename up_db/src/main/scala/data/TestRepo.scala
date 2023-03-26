@@ -53,7 +53,7 @@ trait TestsRepo {
 }
 
 case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extends TestsRepo {
-  def create(testModel: TestModel) :Task[SessionId] = for {
+  def create(testModel: TestModel): Task[SessionId] = for {
     sid <- Random.nextUUID.map(_.toString)
     _ <- ref.update(test => test.concat(List(sid -> TestModelRepo(testModel))))
   } yield sid
@@ -61,7 +61,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
   def lookup(sid: SessionId): UIO[Option[TestModelRepo]] =
     ref.get.map(_.get(sid))
 
-  def elementsCnt :UIO[Int] = ref.get.map(_.size)
+  def elementsCnt: UIO[Int] = ref.get.map(_.size)
 
   def testsList(sid: SessionId): UIO[Option[List[TestInRepo]]] = for {
     test <- lookup(sid)
@@ -70,7 +70,7 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
 
   def testsListEnabled(sid: SessionId): UIO[Option[List[TestInRepo]]] = for {
     test <- lookup(sid)
-    tests = test.flatMap(olt => olt.tests.map(t => t.filter(_.isEnabled==true)))
+    tests = test.flatMap(olt => olt.tests.map(t => t.filter(_.isEnabled == true)))
   } yield tests
 
   def checkTestRepoData(sid: SessionId): UIO[Option[checkTestRepoInfo]] = for {
@@ -81,46 +81,53 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
 
   def updateTestWithResults(sid: SessionId, testWithResults: TestInRepo): UIO[Unit] = for {
     test <- lookup(sid)
-    _ <- test.fold(ZIO.unit){testsSet =>
-      ref.update{
-        tests => tests.concat(
-          List(sid -> TestModelRepo(testsSet.meta,testsSet.tests).updateOneTest(testWithResults))
-        )
+    _ <- test.fold(ZIO.unit) { testsSet =>
+      ref.update {
+        tests =>
+          tests.concat(
+            List(sid -> TestModelRepo(testsSet.meta, testsSet.tests).updateOneTest(testWithResults))
+          )
       }
     }
   } yield ()
 
+  //todo: testId: Int => testId: TestID
   def enableTest(sid: SessionId, testId: Int): UIO[Unit] = for {
     test <- lookup(sid)
-    _ <- test.fold(ZIO.unit){testsSet =>
-      ref.update{
-        tests => tests.concat(
-          List(sid -> TestModelRepo(testsSet.meta,testsSet.tests).enableOneTest(testId))
-        )
-      }}
+    _ <- test.fold(ZIO.unit) { testsSet =>
+      ref.update {
+        tests =>
+          tests.concat(
+            List(sid -> TestModelRepo(testsSet.meta, testsSet.tests).enableOneTest(testId))
+          )
+      }
+    }
   } yield ()
 
   def disableTest(sid: SessionId, testId: Int): UIO[Unit] = for {
     test <- lookup(sid)
-    _ <- test.fold(ZIO.unit){testsSet =>
-      ref.update{
-        tests => tests.concat(
-          List(sid -> TestModelRepo(testsSet.meta,testsSet.tests).disableOneTest(testId))
-        )
-      }}
+    _ <- test.fold(ZIO.unit) { testsSet =>
+      ref.update {
+        tests =>
+          tests.concat(
+            List(sid -> TestModelRepo(testsSet.meta, testsSet.tests).disableOneTest(testId))
+          )
+      }
+    }
   } yield ()
 
   def disableAllTestAndClearExecRes(sid: SessionId): UIO[Unit] = for {
     testModelRepo <- lookup(sid)
-    _ <- testModelRepo.fold(ZIO.unit) {test =>
-      ZIO.foreachDiscard(test.tests.getOrElse(List[TestInRepo]())){t => disableTest(sid, t.id)
-      }}
+    _ <- testModelRepo.fold(ZIO.unit) { test =>
+      ZIO.foreachDiscard(test.tests.getOrElse(List[TestInRepo]())) { t => disableTest(sid, t.id)
+      }
+    }
   } yield ()
-
-object ImplTestsRepo {
-  def layer: ZLayer[Any, Nothing, ImplTestsRepo] =
-    ZLayer.fromZIO(
-      Ref.make(mutable.Map.empty[SessionId, TestModelRepo]).map(new ImplTestsRepo(_))
-    )
-
 }
+
+  object ImplTestsRepo {
+    def layer: ZLayer[Any, Nothing, ImplTestsRepo] =
+      ZLayer.fromZIO(
+        Ref.make(mutable.Map.empty[SessionId, TestModelRepo]).map(new ImplTestsRepo(_))
+      )
+  }
