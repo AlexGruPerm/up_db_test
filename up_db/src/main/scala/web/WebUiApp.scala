@@ -1,7 +1,6 @@
-package webui
+package web
 
-
-import common.types.{SessionId, TestInRepo}
+import common.types.{SessionId}
 import data.ImplTestsRepo
 import error.ResponseMessage
 import runner.{TestRunner, TestRunnerImpl}
@@ -15,11 +14,6 @@ import zio.{Scope, ZIO, ZLayer}
 import java.io.IOException
 import scala.io._
 
-
-/**
- * https://zio.github.io/zio-http/docs/v1.x/dsl/request
- * https://zio.github.io/zio-http/docs/v1.x/examples/advanced-examples/stream-file
-*/
 object WebUiApp {
 
   def acquire(name: => String): ZIO[Any, IOException, Source] =
@@ -55,7 +49,6 @@ object WebUiApp {
 
     } yield resp
 
-  import TestInRepo._
   import tmodel.EncDecTestModelImplicits._
   /**
    * todo: change response, if BadRerquest then JSON with error, if successful then HTML response.
@@ -78,10 +71,8 @@ object WebUiApp {
       })
     } yield resp
 
-  import tmodel.EncDecTestModelImplicits._
+
   import tmodel.EncDecRespTestModelImplicits._
-  import data.TestsRepo
-  //CharsetUtil.UTF_8
   def loadTests(req: Request): ZIO[ImplTestsRepo, Exception, Response] =
     for {
       tr <- ZIO.service[ImplTestsRepo]
@@ -167,12 +158,11 @@ object WebUiApp {
   /**
    * Add catchAll common part to effect.
   */
-  def catchCover[A](eff: ZIO[A, Exception, Response]): ZIO[A, Nothing, Response] =
+  private def catchCover[A](eff: ZIO[A, Exception, Response]): ZIO[A, Nothing, Response] =
     eff.catchAll { e: Exception =>
       ZIO.logError(e.getMessage) *> ZioResponseMsgBadRequest(e.getMessage)
     }
 
-  //todo: Everywhere common equal part - .catchAll, remove in function
   val app: Http[ImplTestsRepo with PrometheusPublisher, Nothing, Request, Response] = Http.collectZIO[Request] {
      case Method.GET  -> !! / "test_info" / sid / testId => catchCover(getTestInfo(sid, testId.toInt))
      case Method.GET  -> !! / "main" => catchCover(getMainPage)

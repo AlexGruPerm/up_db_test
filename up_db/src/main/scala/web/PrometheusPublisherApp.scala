@@ -1,4 +1,4 @@
-package webui
+package web
 
 import zio.http._
 import zio.http.model.{Method}

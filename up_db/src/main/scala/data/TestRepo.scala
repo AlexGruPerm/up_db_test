@@ -7,6 +7,7 @@ import scala.collection.mutable
 import zio.{UIO, _}
 
 trait TestsRepo {
+
   /**
    * Create new Tests set in repo and return SessionId
   */
@@ -75,19 +76,21 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
     tests = test.flatMap(olt => olt.tests.map(t => t.filter(_.isEnabled==true)))
   } yield tests
 
+  private def getTestsOrEmptyList(tests: Option[List[TestInRepo]]): List[TestInRepo] =
+    tests.getOrElse(List[TestInRepo]())
+
   //todo: eliminate v.tests.getOrElse(List[TestInRepo]())
   def checkTestRepoData(sid: SessionId): UIO[Option[checkTestRepoInfo]] = for {
     tests <- lookup(sid)
     res = tests.map{v =>
       checkTestRepoInfo(TestsStatus(
-        v.tests.getOrElse(List[TestInRepo]()).size,
-        v.tests.getOrElse(List[TestInRepo]()).count(t => t.isEnabled),
-        v.tests.getOrElse(List[TestInRepo]()).count(t => !t.isEnabled),
-        v.tests.getOrElse(List[TestInRepo]()).count(t => t.isExecuted),
-        v.tests.getOrElse(List[TestInRepo]()).count(t => t.testState == testStateSuccess),
-        v.tests.getOrElse(List[TestInRepo]()).count(t => t.testState == testStateFailure),
-        //todo: ask a mentor about this cases, what's preferable.
-        v.tests.getOrElse(List[TestInRepo]()).filter(t => t.testState
+        getTestsOrEmptyList(v.tests).size,
+        getTestsOrEmptyList(v.tests).count(t => t.isEnabled),
+        getTestsOrEmptyList(v.tests).count(t => !t.isEnabled),
+        getTestsOrEmptyList(v.tests).count(t => t.isExecuted),
+        getTestsOrEmptyList(v.tests).count(t => t.testState == testStateSuccess),
+        getTestsOrEmptyList(v.tests).count(t => t.testState == testStateFailure),
+        getTestsOrEmptyList(v.tests).filter(t => t.testState
         match {
           case _: testStateSuccess.type => true
           case _ => false})

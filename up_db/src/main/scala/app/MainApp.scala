@@ -2,7 +2,7 @@ package app
 
 import conf.{ConfigHelper, WebUiConfig}
 import data.ImplTestsRepo
-import web.webLogic.startWebServer
+import web.webServer.startWebServer
 import zio.http.Server
 import zio.{Config, ConfigProvider, Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 
