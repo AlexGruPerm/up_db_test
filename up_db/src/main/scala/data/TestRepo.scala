@@ -55,10 +55,7 @@ trait TestsRepo {
 case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extends TestsRepo {
   def create(testModel: TestModel) :Task[SessionId] = for {
     sid <- Random.nextUUID.map(_.toString)
-    _ <- ZIO.logInfo(s"ImplTestsRepo.create generated sid = $sid")
-    /*_ <- ref.update(test => test + (sid -> TestModelRepo(testModel)))*/
     _ <- ref.update(test => test.concat(List(sid -> TestModelRepo(testModel))))
-    _ <- ZIO.logInfo(s"ref COUNT = ${ref.get.map(_.size)}")
   } yield sid
 
   def lookup(sid: SessionId): UIO[Option[TestModelRepo]] =
@@ -84,22 +81,12 @@ case class ImplTestsRepo(ref: Ref[mutable.Map[SessionId, TestModelRepo]]) extend
 
   def updateTestWithResults(sid: SessionId, testWithResults: TestInRepo): UIO[Unit] = for {
     test <- lookup(sid)
-    _ <- test match {
-      case Some(s) =>
-        ref.update{
-          tests => tests.concat(
-            List(sid -> TestModelRepo(
-              s.meta,
-              s.tests.map{
-                tr => tr.map{t =>
-                  if (t.id == testWithResults.id)
-                    testWithResults
-                  else
-                    t
-                }
-              }
-            )))}
-      case None => ZIO.unit
+    _ <- test.fold(ZIO.unit){testsSet =>
+      ref.update{
+        tests => tests.concat(
+          List(sid -> TestModelRepo(testsSet.meta,testsSet.tests).updateOneTest(testWithResults))
+        )
+      }
     }
   } yield ()
 

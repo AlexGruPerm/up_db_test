@@ -169,9 +169,23 @@ object types {
       )
   }
 
-  case class TestModelRepo( meta: TestsMeta, tests: Option[List[TestInRepo]])
+  case class TestModelRepo(meta: TestsMeta, tests: Option[List[TestInRepo]]){
+
+    def updateOneTest(testWithResults: TestInRepo): TestModelRepo ={
+      val updatedTests: Option[List[TestInRepo]] =  tests.map{
+        tr => tr.map {t=>
+          if (t.id == testWithResults.id)
+            testWithResults
+          else
+            t
+        }}
+      this.copy(tests = updatedTests)
+    }
+
+  }
 
   object TestModelRepo {
+
     def apply(tm: TestModel) : TestModelRepo = {
       val testsInRepo: Option[List[TestInRepo]] = tm.tests.map{tst => tst.map{t =>
         TestInRepo(t.id, t.name, t.call_type, t.ret_type, t.use_commit, t.call, t.success_condition, t.isEnabled, testStateUndefined , isExecuted= false,
@@ -181,6 +195,7 @@ object types {
     }
 
   }
+
 
   case class TestExecutionException(exceptionType: String, exceptionMsg: String)
 
