@@ -17,7 +17,11 @@ import common.types.Columns
 
   case class CallTimings(tBegin: Long, tExec: Long, tFetch: Long)
 
-  case class TestExecutionResult(totalMs: Long, fetchMs: Long, execMs: Long, cols : Columns, rowCount: Int,
+  case class TestExecutionResult(totalMs: Long,
+                                 fetchMs: Long,
+                                 execMs: Long,
+                                 cols : Columns,
+                                 rowCount: Int,
                                  err: Option[TestExecutionException] = None)
 
   object TestExecutionResult {
