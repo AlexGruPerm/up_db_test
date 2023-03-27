@@ -9,71 +9,71 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
  * to produce JSON from our data we define a JsonEncoder
  * to parse JSON in our Types we use a JsonDecoder
 */
-sealed trait CallType
-  case object select extends CallType{
-    override def toString: String = "select"
-  }
-  case object function extends CallType{
-    override def toString: String = "function"
-  }
-  case object select_function extends CallType{
-    override def toString: String = "select_function"
-  }
-  case object func_inout_cursor extends CallType{
-    override def toString: String = "func_inout_cursor"
-  }
-  case object dml_sql extends CallType{
-    override def toString: String = "dml_sql"
-  }
+  sealed trait CallType
+    case object select extends CallType{
+      override def toString: String = "select"
+    }
+    case object function extends CallType{
+      override def toString: String = "function"
+    }
+    case object select_function extends CallType{
+      override def toString: String = "select_function"
+    }
+    case object func_inout_cursor extends CallType{
+      override def toString: String = "func_inout_cursor"
+    }
+    case object dml_sql extends CallType{
+      override def toString: String = "dml_sql"
+    }
 
-sealed trait RetType
-  case object cursor extends RetType{
-    override def toString: String = "cursor"
-  }
-  case object dataset extends RetType{
-    override def toString: String = "dataset"
-  }
-  case object integer_value extends RetType{
-    override def toString: String = "integer_value"
-  }
-  case object affected_rows extends RetType{
-    override def toString: String = "affected_rows"
-  }
+  sealed trait RetType
+    case object cursor extends RetType{
+      override def toString: String = "cursor"
+    }
+    case object dataset extends RetType{
+      override def toString: String = "dataset"
+    }
+    case object integer_value extends RetType{
+      override def toString: String = "integer_value"
+    }
+    case object affected_rows extends RetType{
+      override def toString: String = "affected_rows"
+    }
 
-sealed trait SucCond
-  case object rows_gt extends SucCond{
-    override def toString: String = "rows >"
-  }
-  case object rows_lt extends SucCond{
-    override def toString: String = "rows <"
-  }
-  case object rows_eq extends SucCond{
-    override def toString: String = "rows ="
-  }
-  case object rows_ne extends SucCond{
-    override def toString: String = "rows <> "
-  }
-  case object exec_time_ms  extends SucCond{
-    override def toString: String = "Exec. time (ms.) < "
-  }
-  case object fetch_time_ms extends SucCond{
-    override def toString: String = "Fetch time (ms.) < "
-  }
-  case object full_time_ms  extends SucCond{
-    override def toString: String = "Full time (ms.) < "
-  }
-  case object fields_exists  extends SucCond{
-    override def toString: String = "fields exists "
-  }
-  case object exec_exception  extends SucCond{
-    override def toString: String = "is exception exist "
-  }
+  sealed trait SucCond
+    case object rows_gt extends SucCond{
+      override def toString: String = "rows >"
+    }
+    case object rows_lt extends SucCond{
+      override def toString: String = "rows <"
+    }
+    case object rows_eq extends SucCond{
+      override def toString: String = "rows ="
+    }
+    case object rows_ne extends SucCond{
+      override def toString: String = "rows <> "
+    }
+    case object exec_time_ms  extends SucCond{
+      override def toString: String = "Exec. time (ms.) < "
+    }
+    case object fetch_time_ms extends SucCond{
+      override def toString: String = "Fetch time (ms.) < "
+    }
+    case object full_time_ms  extends SucCond{
+      override def toString: String = "Full time (ms.) < "
+    }
+    case object fields_exists  extends SucCond{
+      override def toString: String = "fields exists "
+    }
+    case object exec_exception  extends SucCond{
+      override def toString: String = "is exception exist "
+    }
 
-sealed trait TestState
-  case object testStateUndefined extends TestState
-  case object testStateSuccess extends TestState
-  case object testStateFailure extends  TestState
-  case object testStateExecuting extends TestState
+  sealed trait TestState
+    case object testStateUndefined extends TestState
+    case object testStateSuccess extends TestState
+    case object testStateFailure extends  TestState
+    case object testStateExecuting extends TestState
 
   case class SucCondElement(condition: SucCond,
                             checkValue: Option[Int],
@@ -118,16 +118,14 @@ sealed trait TestState
      val urlMsg: String =  s"jdbc:postgresql://$connect_ip/$db_name?user=*****&password=*****"
   }
 
-  case class Test(
-                   id: TestID,
+  case class Test( id: TestID,
                    name: String,
                    call_type: CallType,
                    ret_type: RetType,
                    use_commit: Option[Boolean],
                    call: String,
                    success_condition: Option[List[SucCondElement]],
-                   isEnabled: Boolean = false
-                 ){
+                   isEnabled: Boolean = false){
 
     private def checkScType(sc: SucCondElement) =
       sc.condition  match {
@@ -189,9 +187,9 @@ sealed trait TestState
   }
 
   case class TestModel(meta: TestsMeta, tests: Option[List[Test]]) {
-      val listID : List[TestID] = tests.getOrElse(List[Test]()).map(t => t.id)
-      if (listID.distinct.size != listID.size)
-        throw new Exception("Not unique id in tests. Must be unique.")
+    val listID : List[TestID] = tests.getOrElse(List[Test]()).map(t => t.id)
+    if (listID.distinct.size != listID.size)
+      throw new Exception("Not unique id in tests. Must be unique.")
   }
 
   case class TestsToRun(sid: SessionId, ids: Option[List[TestID]])

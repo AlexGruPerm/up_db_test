@@ -27,8 +27,8 @@ object TestsStatus{
   def calculated(listTest: List[TestInRepo]) =
     TestsStatus(
       listTest.size,
-      listTest.count(t => t.isEnabled),
-      listTest.count(t => !t.isEnabled),
+      listTest.count(t => t.test.isEnabled),
+      listTest.count(t => !t.test.isEnabled),
       listTest.count(t => t.isExecuted),
       listTest.count(t => t.testState == testStateSuccess),
       listTest.count(t => t.testState == testStateFailure),
@@ -36,8 +36,8 @@ object TestsStatus{
       match {
         case _: testStateSuccess.type => true
         case _ => false})
-        .map(_.id),
-      listTest.filter(_.testState == testStateFailure).map(_.id)
+        .map(_.test.id),
+      listTest.filter(_.testState == testStateFailure).map(_.test.id)
     )
 
 }

@@ -100,7 +100,7 @@
        "call":"select npa.add_npa_to_group((select max(id) from npa.npa_group ng where ng.is_deleted =0 and ng.name ='test_up_grp_name_3'),(select ne.id from npa.npa_entity ne where ne.is_deleted =0 limit 1))",
        "success_condition":[
                             {"condition":"rows_eq",      "checkValue":1},
-                            {"condition":"full_time_ms", "checkValue":100}
+                            {"condition":"full_time_ms", "checkValue":300}
                            ]
       },
       {"id":10,

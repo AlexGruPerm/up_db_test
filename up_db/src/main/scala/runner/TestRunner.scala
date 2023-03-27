@@ -7,11 +7,9 @@ import db.{jdbcSession, jdbcSessionImpl, pgSess}
 import org.postgresql.jdbc.PgResultSet
 import tmodel.{TestsMeta, affected_rows, cursor, dataset, dml_sql, func_inout_cursor, integer_value, select, select_function}
 import zio.metrics.{Metric, MetricLabel}
-import zio.{Task, UIO, ZIO, ZLayer}
+import zio.{ UIO, ZIO, ZLayer}
 import common.types._
-
-import java.sql.{Connection, ResultSet, SQLException}
-import scala.reflect.internal.ClassfileConstants.instanceof
+import java.sql.{Connection, ResultSet}
 
   trait TestRunner {
     def run(): ZIO[Any, Exception, Unit]
@@ -46,15 +44,15 @@ import scala.reflect.internal.ClassfileConstants.instanceof
       countOfExecuted = test.countOfExecuted+1))
   } yield ()
 
-    private def makeCommit(use: Option[Boolean], conn: Connection) =
-      if (use.getOrElse(false))
-        conn.commit()
+  private def makeCommit(use: Option[Boolean], conn: Connection) =
+    if (use.getOrElse(false))
+      conn.commit()
 
-  private def exec_func_inout_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
+  private def exec_func_inout_cursor(pgses: pgSess, testInRepo: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
-      val procCallText = s"{call ${test.call} }"
+      val procCallText = s"{call ${testInRepo.test.call} }"
       val stmt = connection.prepareCall(procCallText);
       stmt.setNull(1, Types.OTHER)
       stmt.registerOutParameter(1, Types.OTHER)
@@ -67,86 +65,86 @@ import scala.reflect.internal.ClassfileConstants.instanceof
         val tFetch = System.currentTimeMillis
         TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
       }
-      makeCommit(test.use_commit, connection)
+      makeCommit(testInRepo.test.use_commit, connection)
       stmt.close()
       connection.close()
       res
     }
     execDbCallCatched = catchAllErrs(execDbCall)
-    _ <- execCallUpdateTestInRepo(execDbCallCatched,test)
+    _ <- execCallUpdateTestInRepo(execDbCallCatched,testInRepo)
   } yield ()
 
-  private def exec_select_dataset(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
+  private def exec_select_dataset(pgses: pgSess, testInRepo: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
       val stmt = connection.createStatement()
       val tBegin = System.currentTimeMillis
-      val pgrs: ResultSet = stmt.executeQuery(test.call);
+      val pgrs: ResultSet = stmt.executeQuery(testInRepo.test.call);
       val tExec = System.currentTimeMillis
       val res: TestExecutionResult = {
         val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
         val tFetch = System.currentTimeMillis
         TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
       }
-      makeCommit(test.use_commit, connection)
+      makeCommit(testInRepo.test.use_commit, connection)
       stmt.close()
       connection.close()
       res
     }
     execDbCallCatched = catchAllErrs(execDbCall)
-    _ <- execCallUpdateTestInRepo(execDbCallCatched,test)
+    _ <- execCallUpdateTestInRepo(execDbCallCatched,testInRepo)
   } yield ()
 
-    private def exec_select_function_int(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
-      _ <- ZIO.unit
-      connection = pgses.sess
-      execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
-        val stmt = connection.createStatement()
-        val tBegin = System.currentTimeMillis
-        val pgrs: ResultSet = stmt.executeQuery(test.call);
-        val tExec = System.currentTimeMillis
-        val res: TestExecutionResult = {
-          val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
-          val tFetch = System.currentTimeMillis
-          TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
-        }
-        makeCommit(test.use_commit, connection)
-        stmt.close()
-        connection.close()
-        res
-      }
-      execDbCallCatched = catchAllErrs(execDbCall)
-      _ <- execCallUpdateTestInRepo(execDbCallCatched,test)
-    } yield ()
-
-    private def exec_dml_sql(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
-      _ <- ZIO.unit
-      connection = pgses.sess
-      execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
-        val stmt = connection.createStatement()
-        val tBegin = System.currentTimeMillis
-        val rowsAffected: Int = stmt.executeUpdate(test.call);
-        val tExec = System.currentTimeMillis
-        val res: TestExecutionResult = {
-          val (cols: Columns, rows: ListRows) = (IndexedSeq[Column](),List[IndexedSeq[String]]())
-          val tFetch = System.currentTimeMillis
-          TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rowsAffected)
-        }
-        makeCommit(test.use_commit, connection)
-        stmt.close()
-        connection.close()
-        res
-      }
-      execDbCallCatched = catchAllErrs(execDbCall)
-      _ <- execCallUpdateTestInRepo(execDbCallCatched,test)
-    } yield ()
-
-  private def exec_select_function_cursor(pgses: pgSess, test: TestInRepo): ZIO[Any, Exception, Unit] = for {
+  private def exec_select_function_int(pgses: pgSess, testInRepo: TestInRepo): ZIO[Any, Exception, Unit] = for {
     _ <- ZIO.unit
     connection = pgses.sess
     execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
-      val stmt = connection.prepareStatement(test.call)
+      val stmt = connection.createStatement()
+      val tBegin = System.currentTimeMillis
+      val pgrs: ResultSet = stmt.executeQuery(testInRepo.test.call);
+      val tExec = System.currentTimeMillis
+      val res: TestExecutionResult = {
+        val (cols: Columns, rows: ListRows) = columnsRows(pgrs)
+        val tFetch = System.currentTimeMillis
+        TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
+      }
+      makeCommit(testInRepo.test.use_commit, connection)
+      stmt.close()
+      connection.close()
+      res
+    }
+    execDbCallCatched = catchAllErrs(execDbCall)
+    _ <- execCallUpdateTestInRepo(execDbCallCatched,testInRepo)
+  } yield ()
+
+  private def exec_dml_sql(pgses: pgSess, testInRepo: TestInRepo): ZIO[Any, Exception, Unit] = for {
+    _ <- ZIO.unit
+    connection = pgses.sess
+    execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
+      val stmt = connection.createStatement()
+      val tBegin = System.currentTimeMillis
+      val rowsAffected: Int = stmt.executeUpdate(testInRepo.test.call);
+      val tExec = System.currentTimeMillis
+      val res: TestExecutionResult = {
+        val (cols: Columns, rows: ListRows) = (IndexedSeq[Column](),List[IndexedSeq[String]]())
+        val tFetch = System.currentTimeMillis
+        TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rowsAffected)
+      }
+      makeCommit(testInRepo.test.use_commit, connection)
+      stmt.close()
+      connection.close()
+      res
+    }
+    execDbCallCatched = catchAllErrs(execDbCall)
+    _ <- execCallUpdateTestInRepo(execDbCallCatched,testInRepo)
+  } yield ()
+
+  private def exec_select_function_cursor(pgses: pgSess, testInRepo: TestInRepo): ZIO[Any, Exception, Unit] = for {
+    _ <- ZIO.unit
+    connection = pgses.sess
+    execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
+      val stmt = connection.prepareStatement(testInRepo.test.call)
       val tBegin = System.currentTimeMillis
       val rs: ResultSet = stmt.executeQuery()
       val tExec = System.currentTimeMillis
@@ -158,13 +156,13 @@ import scala.reflect.internal.ClassfileConstants.instanceof
         val tFetch = System.currentTimeMillis
         TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rows.size)
       }
-      makeCommit(test.use_commit, connection)
+      makeCommit(testInRepo.test.use_commit, connection)
       stmt.close()
       connection.close()
       res
   }
     execDbCallCatched = catchAllErrs(execDbCall)
-    _ <- execCallUpdateTestInRepo(execDbCallCatched,test)
+    _ <- execCallUpdateTestInRepo(execDbCallCatched,testInRepo)
   } yield ()
 
   private def catchAllErrs(eff: ZIO[Any, Throwable, TestExecutionResult]): UIO[TestExecutionResult] = for {
@@ -175,20 +173,20 @@ import scala.reflect.internal.ClassfileConstants.instanceof
     }
   } yield effAfterCatch
 
-  private def exec(test: TestInRepo): ZIO[TestsMeta with jdbcSession, Exception, Unit] = for {
+  private def exec(testInRepo: TestInRepo): ZIO[TestsMeta with jdbcSession, Exception, Unit] = for {
     jdbc <- ZIO.service[jdbcSession]
-    conn <- jdbc.pgConnection(test.id)
-    _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${test.id}] isOpened Connection = ${!conn.sess.isClosed}")
-    _ <- (test.call_type,test.ret_type) match {
-      case (_: select_function.type, _: cursor.type) => exec_select_function_cursor(conn,test) @@
+    conn <- jdbc.pgConnection(testInRepo.test.id)
+    _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${testInRepo.test.id}] isOpened Connection = ${!conn.sess.isClosed}")
+    _ <- (testInRepo.test.call_type,testInRepo.test.ret_type) match {
+      case (_: select_function.type, _: cursor.type) => exec_select_function_cursor(conn,testInRepo) @@
         countAllRequests("select_function_cursor")
-      case (_: select_function.type, _: integer_value.type) => exec_select_function_int(conn,test) @@
+      case (_: select_function.type, _: integer_value.type) => exec_select_function_int(conn,testInRepo) @@
         countAllRequests("select_function_integer_value")
-      case (_: func_inout_cursor.type , _: cursor.type) => exec_func_inout_cursor(conn,test) @@
+      case (_: func_inout_cursor.type , _: cursor.type) => exec_func_inout_cursor(conn,testInRepo) @@
         countAllRequests("func_inout_cursor")
-      case (_: select.type, _: dataset.type) => exec_select_dataset(conn,test) @@
+      case (_: select.type, _: dataset.type) => exec_select_dataset(conn,testInRepo) @@
         countAllRequests("select_dataset")
-      case (_: dml_sql.type, _: affected_rows.type) => exec_dml_sql(conn,test) @@
+      case (_: dml_sql.type, _: affected_rows.type) => exec_dml_sql(conn,testInRepo) @@
         countAllRequests("dml_sql")
       case _ => ZIO.unit
     }
@@ -211,7 +209,7 @@ import scala.reflect.internal.ClassfileConstants.instanceof
       _ <- testsSetOpt match {
         case Some(testsSet) =>
           ZIO.logInfo(s" Begin tests set execution for SID = $sid") *>
-          ZIO.foreachDiscard(testsSet.tests.getOrElse(List[TestInRepo]()).filter(_.isEnabled == true)) {
+          ZIO.foreachDiscard(testsSet.optListTestInRepo.getOrElse(List[TestInRepo]()).filter(_.test.isEnabled == true)) {
             testId: TestInRepo =>
               exec(testId).provide(ZLayer.succeed(testsSet.meta), jdbcSessionImpl.layer) @@ execInRunCount
           }

@@ -57,7 +57,7 @@ object WebUiApp {
       tr <- ZIO.service[ImplTestsRepo]
       tests <- tr.testsList(sid)
       resp = (tests match {
-        case Some(testsList) => testsList.find(_.id == testId) match {
+        case Some(testsList) => testsList.find(_.test.id == testId) match {
           case Some(thisTest) =>
             Response.html(thisTest.getTestAsHtml, Status.Ok)
             //Response.json(thisTest.toJson)
@@ -101,7 +101,8 @@ object WebUiApp {
                 optTests =>
                   Response.json(RespTestModel(
                     Session(sid),
-                    optTests.map { trp => trp.map { t => RespTest(t.id, s"[${t.id}] ${t.name}") } }
+                    optTests.map { trp => trp.map { testInRepo =>
+                      RespTest(testInRepo.test.id, s"[${testInRepo.test.id}] ${testInRepo.test.name}") } }
                   ).toJson)
               }
           }.foldZIO(
@@ -115,7 +116,7 @@ object WebUiApp {
   private def startTestsLogic(testsToRun: TestsToRun): ZIO[ImplTestsRepo with TestRunner, Exception, Unit] = for {
     tr <- ZIO.service[ImplTestsRepo]
     _ <- ZIO.logInfo(s" testsToRun = ${testsToRun.sid} - ${testsToRun.ids}")
-    _ <- ZIO.logInfo(s" Call disableAllTest for sid=${testsToRun.sid}")
+    _ <- ZIO.logInfo(s" Call disableAllTest for sid = ${testsToRun.sid}")
       .when(testsToRun.ids.getOrElse(List[Int]()).isEmpty)
     _ <- tr.disableAllTestAndClearExecRes(testsToRun.sid)
     _ <- ZIO.foreachDiscard(testsToRun.ids.getOrElse(List[Int]())) {
