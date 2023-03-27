@@ -1,24 +1,14 @@
 package tmodel
 
+import common.types.SessionId
 import common.{TestExecutionException, TestExecutionResult, TestInRepo}
-import zio.http.html.div
-import zio.http.{Handler, Response}
-import zio.{Random, ZIO}
+import data.TestRepoTypes.TestID
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
-
-import scala.annotation.nowarn
-
-/*sealed abstract class CallType(@nowarn name: String)
-  object CallType{
-    case object procedure extends CallType("procedure")
-    case object function extends CallType("function")
-  }*/
 
 /**
  * to produce JSON from our data we define a JsonEncoder
  * to parse JSON in our Types we use a JsonDecoder
 */
-
 sealed trait CallType
   case object select extends CallType{
     override def toString: String = "select"
@@ -113,9 +103,8 @@ sealed trait TestState
     /**
      * remove information about execResultValue and conditionResult
     */
-    def uncheck():SucCondElement = {
+    def uncheck():SucCondElement =
       this.copy(execResultValue = None, conditionResult = None)
-    }
 
   }
 
@@ -125,13 +114,12 @@ sealed trait TestState
                        db_user: String,
                        db_password: String) {
      val driver = "org.postgresql.Driver"
-     def url: String =  s"jdbc:postgresql://$connect_ip/$db_name?user=$db_user&password=$db_password"
-     def urlMsg: String =  s"jdbc:postgresql://$connect_ip/$db_name?user=*****&password=*****"
-
+     val url: String =  s"jdbc:postgresql://$connect_ip/$db_name?user=$db_user&password=$db_password"
+     val urlMsg: String =  s"jdbc:postgresql://$connect_ip/$db_name?user=*****&password=*****"
   }
 
   case class Test(
-                   id: Int,
+                   id: TestID,
                    name: String,
                    call_type: CallType,
                    ret_type: RetType,
@@ -183,8 +171,6 @@ sealed trait TestState
       }
     }
 
-
-
     val listSC : List[SucCondElement] =  success_condition.getOrElse(List[SucCondElement]())
     val listOfCheckFuncs: List[List[SucCondElement] => Option[String]] = List(checkSucCondEcexException)
     val scErrorText: Option[String] = listOfCheckFuncs.view.flatMap(_(listSC)).headOption
@@ -203,12 +189,12 @@ sealed trait TestState
   }
 
   case class TestModel(meta: TestsMeta, tests: Option[List[Test]]) {
-      val listID : List[Int] = tests.getOrElse(List[Test]()).map(t => t.id)
+      val listID : List[TestID] = tests.getOrElse(List[Test]()).map(t => t.id)
       if (listID.distinct.size != listID.size)
         throw new Exception("Not unique id in tests. Must be unique.")
   }
 
-  case class TestsToRun(sid: String, ids: Option[List[Int]])
+  case class TestsToRun(sid: SessionId, ids: Option[List[TestID]])
 
   object EncDecTestModelImplicits{
 
