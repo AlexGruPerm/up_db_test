@@ -1,9 +1,10 @@
 package data
 
-import common.{TestInRepo, TestModelRepo}
+import common.TestModelRepo
 import common.types.SessionId
 import data.TestRepoTypes.TestID
-import tmodel.{TestModel}
+import tmodel.{Test, TestModel}
+
 import scala.collection.mutable
 import zio.{UIO, _}
 
@@ -26,7 +27,7 @@ import zio.{UIO, _}
      * Return list of tests from concrete TestModelRepo by sid.
      * For output in div.test_list
     */
-    def testsList(sid: SessionId): UIO[Option[List[TestInRepo]]]
+    def testsList(sid: SessionId): UIO[Option[List[Test]]]
 
     /**
      * Aggregated information for debug purpose
@@ -36,7 +37,7 @@ import zio.{UIO, _}
     /**
      * Update one test in TestModelRepo, test must be with execution results - look TestExecutionResult
     */
-    def updateTestWithResults(sid: SessionId, testWithResults: TestInRepo): UIO[Unit]
+    def updateTestWithResults(sid: SessionId, testWithResults: Test): UIO[Unit]
 
     /**
      * Enable one test in the tests set identified by sid.
@@ -53,7 +54,7 @@ import zio.{UIO, _}
      */
     def disableAllTestAndClearExecRes(sid: SessionId): UIO[Unit]
 
-    def testsListEnabled(sid: SessionId): UIO[Option[List[TestInRepo]]]
+    def testsListEnabled(sid: SessionId): UIO[Option[List[Test]]]
 
 }
 
@@ -69,14 +70,14 @@ import zio.{UIO, _}
 
     def elementsCnt: UIO[Int] = ref.get.map(_.size)
 
-    def testsList(sid: SessionId): UIO[Option[List[TestInRepo]]] = for {
+    def testsList(sid: SessionId): UIO[Option[List[Test]]] = for {
       test <- lookup(sid)
       tests = test.flatMap(tst => tst.optListTestInRepo)
     } yield tests
 
-    def testsListEnabled(sid: SessionId): UIO[Option[List[TestInRepo]]] = for {
+    def testsListEnabled(sid: SessionId): UIO[Option[List[Test]]] = for {
       test <- lookup(sid)
-      tests = test.flatMap(olt => olt.optListTestInRepo.map(t => t.filter(_.test.isEnabled == true)))
+      tests = test.flatMap(olt => olt.optListTestInRepo.map(t => t.filter(_.isEnabled == true)))
     } yield tests
 
     def checkTestRepoData(sid: SessionId): UIO[Option[checkTestRepoInfo]] = for {
@@ -85,7 +86,7 @@ import zio.{UIO, _}
       res <- ZIO.succeed(res)
     } yield res
 
-    def updateTestWithResults(sid: SessionId, testWithResults: TestInRepo): UIO[Unit] = for {
+    def updateTestWithResults(sid: SessionId, testWithResults: Test): UIO[Unit] = for {
       test <- lookup(sid)
       _ <- test.fold(ZIO.unit) { testsSet =>
         ref.update {
@@ -122,8 +123,8 @@ import zio.{UIO, _}
     def disableAllTestAndClearExecRes(sid: SessionId): UIO[Unit] = for {
       testModelRepo <- lookup(sid)
       _ <- testModelRepo.fold(ZIO.unit) { test =>
-        ZIO.foreachDiscard(test.optListTestInRepo.getOrElse(List[TestInRepo]())) { t =>
-          disableTest(sid, t.test.id)
+        ZIO.foreachDiscard(test.optListTestInRepo.getOrElse(List[Test]())) { t =>
+          disableTest(sid, t.id)
         }}
     } yield ()
   }

@@ -57,7 +57,7 @@ object WebUiApp {
       tr <- ZIO.service[ImplTestsRepo]
       tests <- tr.testsList(sid)
       resp = (tests match {
-        case Some(testsList) => testsList.find(_.test.id == testId) match {
+        case Some(testsList) => testsList.find(_.id == testId) match {
           case Some(thisTest) =>
             Response.html(thisTest.getTestAsHtml, Status.Ok)
             //Response.json(thisTest.toJson)
@@ -102,7 +102,7 @@ object WebUiApp {
                   Response.json(RespTestModel(
                     Session(sid),
                     optTests.map { trp => trp.map { testInRepo =>
-                      RespTest(testInRepo.test.id, s"[${testInRepo.test.id}] ${testInRepo.test.name}") } }
+                      RespTest(testInRepo.id, s"[${testInRepo.id}] ${testInRepo.name}") } }
                   ).toJson)
               }
           }.foldZIO(

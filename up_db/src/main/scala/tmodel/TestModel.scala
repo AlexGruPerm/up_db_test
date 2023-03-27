@@ -1,8 +1,9 @@
 package tmodel
 
 import common.types.SessionId
-import common.{TestExecutionException, TestExecutionResult, TestInRepo}
+import common.{TestExecutionException, TestExecutionResult}
 import data.TestRepoTypes.TestID
+import zio.http.html.{Html, bgColorAttr, borderAttr, br, colSpanAttr, css, div, id, idAttr, pre, s, table, td, tr, widthAttr, wrapAttr}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
 /**
@@ -108,7 +109,6 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
   }
 
-
   case class TestsMeta(connect_ip: String,
                        db_name: String,
                        db_user: String,
@@ -125,7 +125,12 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
                    use_commit: Option[Boolean],
                    call: String,
                    success_condition: Option[List[SucCondElement]],
-                   isEnabled: Boolean = false){
+                   isEnabled: Boolean = false,
+                   testState: TestState = testStateUndefined,
+                   isExecuted: Boolean = false,
+                   testRes: TestExecutionResult = TestExecutionResult(),
+                   countOfExecuted: Int = 0
+                 ){
 
     private def checkScType(sc: SucCondElement) =
       sc.condition  match {
@@ -184,6 +189,135 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
       case None => ()
     }
 
+    private def getState(checked_success_condition: Option[List[SucCondElement]]): TestState =
+      checked_success_condition match {
+        case Some(listSucCond) =>
+          if (listSucCond.exists(_.conditionResult.getOrElse(false) == false))
+            testStateFailure
+          else testStateSuccess
+        case None => testStateUndefined
+      }
+
+    /**
+     * Used for analyze executions results in testRes
+     * with test's conditions (success_condition).
+     */
+    def checkConditions: Test = {
+      val checked_success_conditions: Option[List[SucCondElement]] = {
+        success_condition.map(lst => lst.map(sc => sc.check(testRes)))
+      }
+      val newTestState: TestState = getState(checked_success_conditions)
+      println(s"checkConditions newTestState=${newTestState}")
+      this.copy(success_condition = checked_success_conditions,testState = newTestState)// testRes = this.testRes)
+    }
+
+    def getTestAsHtml: Html =
+      div(
+        table(
+          borderAttr := "1px solid black",
+          css := (if (testState == testStateFailure)
+            "test_state_failure" :: Nil
+          else if (testState == testStateSuccess)
+            "test_state_success" :: Nil
+          else
+            "test_state_undef" :: Nil),
+          idAttr := s"table_test_$id",
+          testRes.err match {
+            case Some(err) =>
+              tr(bgColorAttr := "#FF4500;",
+                td(
+                  colSpanAttr:= "2",
+                  pre(wrapAttr:= "pre-wrap", widthAttr := "200px", s"TYPE = ${err.exceptionType}"),
+                  pre(wrapAttr:= "pre-wrap", widthAttr := "200px", err.exceptionMsg),
+                  (if ((err.exceptionMsg contains "MESSAGE TEXT:") &&
+                    (err.exceptionMsg contains "CONTEXT")
+                  ) {
+                    pre(wrapAttr := "pre-wrap", widthAttr := "200px", err.exceptionMsg.substring(
+                      err.exceptionMsg.indexOf("MESSAGE TEXT:") + 14,
+                      err.exceptionMsg.indexOf("CONTEXT")
+                    ))
+                  })
+                ))
+            case None => br()
+          },
+          tr(
+            td(
+              colSpanAttr:= "2",
+              pre(wrapAttr:= "pre-wrap", widthAttr := "200px", call)
+            )),
+          tr(
+            td(
+              colSpanAttr:= "2",
+              div(
+                s"[${id}] ${name}"
+              ),br()
+            )
+          ),
+          tr(
+            td(
+              colSpanAttr:= "2",
+              div(
+                s"Test was executed $countOfExecuted times."
+              ),br()
+            )
+          ),
+          tr(td("Call type :"),td(call_type.toString)),
+          tr(td("Return type :"),td(ret_type.toString)),
+          if (use_commit.getOrElse(false))
+            tr(bgColorAttr := "#F9E79F",
+              td(
+                colSpanAttr:= "2",
+                div(
+                  "Commit"
+                )
+              )
+            ) else ()
+          ,
+          tr(td(colSpanAttr:= "2",div("Call :"))),
+          tr(td(colSpanAttr:= "2", pre(wrapAttr:= "pre-wrap", widthAttr := "200px", call) )),
+          tr(td(colSpanAttr:= "2","Success conditions:")),
+          //table with success conditions ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          tr(td(colSpanAttr:= "2",
+            //condition: SucCond, checkValue: Int, execResultValue: Option[Int], conditionResult: Option[Boolean]
+            table(
+              borderAttr := "1px",
+              idAttr := s"table_test_conditions_$id",
+              tr(
+                td("Exec value"),
+                td("Condition"),
+                td("Check value"),
+                td("Result")
+              ),
+              success_condition.getOrElse(List[SucCondElement]()).map {sc =>
+                tr(bgColorAttr := (if (sc.conditionResult.getOrElse(false))
+                  "#228B22;"
+                else
+                  "#FF4500;"),
+                  td(
+                    sc.condition match {
+                      case _:fields_exists.type => testRes.cols.map(_._1).mkString("</br>")
+                      case _:exec_exception.type =>
+                        testRes.err.fold("no exception but expected")(_ => "exception exist, it's OK")
+                      case _ => sc.execResultValue.getOrElse(0).toString
+                    }
+                  ),
+                  td(sc.condition.toString),
+                  td(
+                    sc.condition match {
+                      case _:fields_exists.type => sc.fields.getOrElse(List[String]()).mkString("</br>")
+                      case _:exec_exception.type => "true"
+                      case _ => sc.checkValue.toString
+                    }
+                  ),
+                  td(sc.conditionResult.getOrElse(false).toString)
+                )
+              }
+            )
+          ))
+          // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        )
+      )
+
   }
 
   case class TestModel(meta: TestsMeta, tests: Option[List[Test]]) {
@@ -232,6 +366,25 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
       case anyValue => throw new Exception(s"Invalid value in field inside success_condition = $anyValue")
     }
 
+    implicit val encoderTestState: JsonEncoder[TestState] = DeriveJsonEncoder.gen[TestState]
+    implicit val decoderTestState: JsonDecoder[TestState] = JsonDecoder[String].map {
+      case _ => testStateUndefined
+    }
+
+    implicit val encoderTestExecutionResult: JsonEncoder[TestExecutionResult] = DeriveJsonEncoder.gen[TestExecutionResult]
+    implicit val decoderTestExecutionResult: JsonDecoder[TestExecutionResult] = DeriveJsonDecoder.gen[TestExecutionResult]
+
+    /*
+    implicit val encoderTestState: JsonEncoder[TestState] = DeriveJsonEncoder.gen[TestState]
+    implicit val decoderTestState: JsonDecoder[TestState] = JsonDecoder[String].map {
+      case "testStateUndefined" => testStateUndefined
+      case "testStateSuccess" => testStateSuccess
+      case "testStateFailure" => testStateFailure
+      case "testStateExecuting" => testStateExecuting
+      case anyValue => throw new Exception(s"Invalid value in field call_type = $anyValue")
+    }
+    */
+
     implicit val encoderSucCondElement: JsonEncoder[SucCondElement] = DeriveJsonEncoder.gen[SucCondElement]
     implicit val decoderSucCondElement: JsonDecoder[SucCondElement] = DeriveJsonDecoder.gen[SucCondElement]
 
@@ -247,21 +400,6 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
     implicit val encoderTestsToRun: JsonEncoder[TestsToRun] = DeriveJsonEncoder.gen[TestsToRun]
     implicit val decoderTestsToRun: JsonDecoder[TestsToRun] = DeriveJsonDecoder.gen[TestsToRun]
 
-    implicit val encoderTestState: JsonEncoder[TestState] = DeriveJsonEncoder.gen[TestState]
-
-    implicit val decoderTestState: JsonDecoder[TestState] = JsonDecoder[String].map {
-      case "testStateUndefined" => testStateUndefined
-      case "testStateSuccess" => testStateSuccess
-      case "testStateFailure" => testStateFailure
-      case "testStateExecuting" => testStateExecuting
-      case anyValue => throw new Exception(s"Invalid value in field call_type = $anyValue")
-    }
-
-    implicit val encoderTestExecutionResult: JsonEncoder[TestExecutionResult] = DeriveJsonEncoder.gen[TestExecutionResult]
-    implicit val decoderTestExecutionResult: JsonDecoder[TestExecutionResult] = DeriveJsonDecoder.gen[TestExecutionResult]
-
-    implicit val encoderTestInRepo: JsonEncoder[TestInRepo] = DeriveJsonEncoder.gen[TestInRepo]
-    implicit val decoderTestInRepo: JsonDecoder[TestInRepo] = DeriveJsonDecoder.gen[TestInRepo]
 
   }
 
