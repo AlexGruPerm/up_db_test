@@ -154,7 +154,7 @@ object WebUiApp {
   /**
    * Add catchAll common part to effect.
   */
-  private def catchCover[A](eff: ZIO[A, Exception, Response]): ZIO[A, Nothing, Response] =
+  private def catchCover[C](eff: ZIO[C, Exception, Response]): ZIO[C, Nothing, Response] =
     eff.catchAll { e: Exception =>
       ZIO.logError(e.getMessage) *> ZioResponseMsgBadRequest(e.getMessage)
     }

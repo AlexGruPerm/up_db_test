@@ -5,12 +5,12 @@ ThisBuild / version      := "0.0.1"
 ThisBuild / scalaVersion := "2.13.10"
 
   val Versions = new {
-    val zio         = "2.0.10"     // "2.0.5"
-    val zio_config  = "4.0.0-RC14" // "3.0.7"
-    val zio_http    = "0.0.5"      // "0.0.4"
-    val zio_json    = "0.5.0"      // "0.3.0-RC11"
-    val pgVers      = "42.6.0"     // "42.5.3"
-    val zio_metrics = "2.0.7"      // "2.0.6"
+    val zio         = "2.0.11"     //"2.0.10"
+    val zio_config  = "4.0.0-RC14"
+    val zio_http    = "0.0.5"
+    val zio_json    = "0.5.0"
+    val pgVers      = "42.6.0"
+    val zio_metrics = "2.0.7"
   }
 
   // PROJECTS
@@ -73,6 +73,7 @@ ThisBuild / scalaVersion := "2.13.10"
     scalacOptions ++= compilerOptions,
     resolvers ++= Seq(
       "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
+      "Sonatype OSS Snapshots s01" at "https://s01.oss.sonatype.org/content/repositories/snapshots",
       Resolver.DefaultMavenRepository,
       Resolver.mavenLocal,
       Resolver.bintrayRepo("websudos", "oss-releases")
