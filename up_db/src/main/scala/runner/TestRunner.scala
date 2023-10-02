@@ -5,7 +5,7 @@ import common.types.SessionId
 import data.ImplTestsRepo
 import db.{jdbcSession, jdbcSessionImpl, pgSess}
 import org.postgresql.jdbc.PgResultSet
-import tmodel.{Test, TestsMeta, affected_rows, cursor, dataset, dml_sql, func_inout_cursor, integer_value, select, select_function}
+import tmodel.{Test, TestsMeta, Affected_rows, Cursor, Dataset, Dml_sql, Func_inout_cursor, Integer_value, Select, Select_function}
 import zio.metrics.{Metric, MetricLabel}
 import zio.{UIO, ZIO, ZLayer}
 import common.types._
@@ -179,15 +179,15 @@ import java.sql.{Connection, ResultSet}
     conn <- jdbc.pgConnection(testInRepo.id)
     _ <- ZIO.logInfo(s" ----> sid=[$sid] tests [${testInRepo.id}] isOpened Connection = ${!conn.sess.isClosed}")
     _ <- (testInRepo.call_type,testInRepo.ret_type) match {
-      case (_: select_function.type, _: cursor.type) => exec_select_function_cursor(conn,testInRepo) @@
+      case (_: Select_function.type, _: Cursor.type) => exec_select_function_cursor(conn,testInRepo) @@
         countAllRequests("select_function_cursor")
-      case (_: select_function.type, _: integer_value.type) => exec_select_function_int(conn,testInRepo) @@
+      case (_: Select_function.type, _: Integer_value.type) => exec_select_function_int(conn,testInRepo) @@
         countAllRequests("select_function_integer_value")
-      case (_: func_inout_cursor.type , _: cursor.type) => exec_func_inout_cursor(conn,testInRepo) @@
+      case (_: Func_inout_cursor.type , _: Cursor.type) => exec_func_inout_cursor(conn,testInRepo) @@
         countAllRequests("func_inout_cursor")
-      case (_: select.type, _: dataset.type) => exec_select_dataset(conn,testInRepo) @@
+      case (_: Select.type, _: Dataset.type) => exec_select_dataset(conn,testInRepo) @@
         countAllRequests("select_dataset")
-      case (_: dml_sql.type, _: affected_rows.type) => exec_dml_sql(conn,testInRepo) @@
+      case (_: Dml_sql.type, _: Affected_rows.type) => exec_dml_sql(conn,testInRepo) @@
         countAllRequests("dml_sql")
       case _ => ZIO.unit
     }

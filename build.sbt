@@ -5,12 +5,12 @@ ThisBuild / version      := "0.0.1"
 ThisBuild / scalaVersion := "2.13.10"
 
   val Versions = new {
-    val zio         = "2.0.11"     //"2.0.10"
-    val zio_config  = "4.0.0-RC14"
-    val zio_http    = "0.0.5"
-    val zio_json    = "0.5.0"
+    val zio         = "2.0.18"
+    val zio_config  = "4.0.0-RC16"
+    val zio_http    = "0.0.5"//"3.0.0-RC2" //"0.0.5"
+    val zio_json    = "0.6.2"
     val pgVers      = "42.6.0"
-    val zio_metrics = "2.0.7"
+    val zio_metrics = "2.0.7"//"2.2.0"
   }
 
   // PROJECTS

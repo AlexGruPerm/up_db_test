@@ -11,62 +11,62 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
  * to parse JSON in our Types we use a JsonDecoder
 */
   sealed trait CallType
-    case object select extends CallType{
+    case object Select extends CallType{
       override def toString: String = "select"
     }
-    case object function extends CallType{
+    case object Function extends CallType{
       override def toString: String = "function"
     }
-    case object select_function extends CallType{
+    case object Select_function extends CallType{
       override def toString: String = "select_function"
     }
-    case object func_inout_cursor extends CallType{
+    case object Func_inout_cursor extends CallType{
       override def toString: String = "func_inout_cursor"
     }
-    case object dml_sql extends CallType{
+    case object Dml_sql extends CallType{
       override def toString: String = "dml_sql"
     }
 
   sealed trait RetType
-    case object cursor extends RetType{
+    case object Cursor extends RetType{
       override def toString: String = "cursor"
     }
-    case object dataset extends RetType{
+    case object Dataset extends RetType{
       override def toString: String = "dataset"
     }
-    case object integer_value extends RetType{
+    case object Integer_value extends RetType{
       override def toString: String = "integer_value"
     }
-    case object affected_rows extends RetType{
+    case object Affected_rows extends RetType{
       override def toString: String = "affected_rows"
     }
 
   sealed trait SucCond
-    case object rows_gt extends SucCond{
+    case object Rows_gt extends SucCond{
       override def toString: String = "rows >"
     }
-    case object rows_lt extends SucCond{
+    case object Rows_lt extends SucCond{
       override def toString: String = "rows <"
     }
-    case object rows_eq extends SucCond{
+    case object Rows_eq extends SucCond{
       override def toString: String = "rows ="
     }
-    case object rows_ne extends SucCond{
+    case object Rows_ne extends SucCond{
       override def toString: String = "rows <> "
     }
-    case object exec_time_ms  extends SucCond{
+    case object Exec_time_ms  extends SucCond{
       override def toString: String = "Exec. time (ms.) < "
     }
-    case object fetch_time_ms extends SucCond{
+    case object Fetch_time_ms extends SucCond{
       override def toString: String = "Fetch time (ms.) < "
     }
-    case object full_time_ms  extends SucCond{
+    case object Full_time_ms  extends SucCond{
       override def toString: String = "Full time (ms.) < "
     }
-    case object fields_exists  extends SucCond{
+    case object Fields_exists  extends SucCond{
       override def toString: String = "fields exists "
     }
-    case object exec_exception  extends SucCond{
+    case object Exec_exception  extends SucCond{
       override def toString: String = "is exception exist "
     }
 
@@ -86,17 +86,17 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
     def check(testRes: TestExecutionResult):SucCondElement = {
       val (checkConditionRes,testResVal): (Boolean,Option[Long]) =
         condition match {
-        case _:rows_gt.type => (checkValue.getOrElse(0) < testRes.rowCount,Some(testRes.rowCount))
-        case _:rows_lt.type => (checkValue.getOrElse(0) > testRes.rowCount,Some(testRes.rowCount))
-        case _:rows_eq.type => (checkValue.getOrElse(0) == testRes.rowCount,Some(testRes.rowCount))
-        case _:rows_ne.type => (checkValue.getOrElse(0) != testRes.rowCount,Some(testRes.rowCount))
-        case _:exec_time_ms.type  => (testRes.execMs <= checkValue.getOrElse(0),Some(testRes.execMs))
-        case _:fetch_time_ms.type => (testRes.fetchMs <= checkValue.getOrElse(0),Some(testRes.fetchMs))
-        case _:full_time_ms.type  => (testRes.totalMs <= checkValue.getOrElse(0),Some(testRes.totalMs))
+        case Rows_gt => (checkValue.getOrElse(0) < testRes.rowCount,Some(testRes.rowCount))
+        case Rows_lt => (checkValue.getOrElse(0) > testRes.rowCount,Some(testRes.rowCount))
+        case Rows_eq => (checkValue.getOrElse(0) == testRes.rowCount,Some(testRes.rowCount))
+        case Rows_ne => (checkValue.getOrElse(0) != testRes.rowCount,Some(testRes.rowCount))
+        case Exec_time_ms  => (testRes.execMs <= checkValue.getOrElse(0),Some(testRes.execMs))
+        case Fetch_time_ms => (testRes.fetchMs <= checkValue.getOrElse(0),Some(testRes.fetchMs))
+        case Full_time_ms  => (testRes.totalMs <= checkValue.getOrElse(0),Some(testRes.totalMs))
         // ._1 - column name, _.2 - column type
-        case _:fields_exists.type  => (fields.getOrElse(List[String]()).forall(testRes.cols.map(cls => cls._1).contains),
+        case Fields_exists  => (fields.getOrElse(List[String]()).forall(testRes.cols.map(cls => cls._1).contains),
           Some(1))
-        case _:exec_exception.type => (testRes.err.fold(false)(_ => true),Some(1))
+        case Exec_exception => (testRes.err.fold(false)(_ => true),Some(1))
         }
       this.copy(execResultValue = testResVal, conditionResult = Some(checkConditionRes))
     }
@@ -134,7 +134,7 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
     private def checkScType(sc: SucCondElement) =
       sc.condition  match {
-        case _ : exec_exception.type => true
+        case Exec_exception => true
         case _ => false
       }
 
@@ -149,25 +149,25 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
     private def checkCallTypeRetType(ct: CallType, rt: RetType): Option[String] = {
       ct match {
-        case _:select_function.type =>
+        case _:Select_function.type =>
           rt match {
-            case _:cursor.type  => None
-            case _:integer_value.type  => None
+            case _:Cursor.type  => None
+            case _:Integer_value.type  => None
             case _ => Some(s"TestID=[$id] For call type (select_function) is only applicable ret_type: cursor, integer_value ")
           }
-        case _:select.type =>
+        case _:Select.type =>
         rt match {
-          case _: dataset.type => None
+          case _: Dataset.type => None
           case _ => Some(s"TestID=[$id] For call type (select) is only applicable ret_type: dataset ")
         }
-        case _:func_inout_cursor.type =>
+        case _:Func_inout_cursor.type =>
           rt match {
-            case _: cursor.type => None
+            case _: Cursor.type => None
             case _ => Some(s"TestID=[$id] For call type (func_inout_cursor) is only applicable ret_type: cursor ")
           }
-        case _:dml_sql.type =>
+        case _:Dml_sql.type =>
           rt match {
-            case _: affected_rows.type => None
+            case _: Affected_rows.type => None
             case _ => Some(s"TestID=[$id] For call type (dml_sql) is only applicable ret_type: affected_rows ")
           }
         case _ => None
@@ -295,8 +295,8 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
                   "#FF4500;"),
                   td(
                     sc.condition match {
-                      case _:fields_exists.type => testRes.cols.map(_._1).mkString("</br>")
-                      case _:exec_exception.type =>
+                      case Fields_exists => testRes.cols.map(_._1).mkString("</br>")
+                      case Exec_exception =>
                         testRes.err.fold("no exception but expected")(_ => "exception exist, it's OK")
                       case _ => sc.execResultValue.getOrElse(0).toString
                     }
@@ -304,8 +304,8 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
                   td(sc.condition.toString),
                   td(
                     sc.condition match {
-                      case _:fields_exists.type => sc.fields.getOrElse(List[String]()).mkString("</br>")
-                      case _:exec_exception.type => "true"
+                      case Fields_exists => sc.fields.getOrElse(List[String]()).mkString("</br>")
+                      case Exec_exception => "true"
                       case _ => sc.checkValue.toString
                     }
                   ),
@@ -335,34 +335,34 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
     implicit val encoderCallType: JsonEncoder[CallType] = DeriveJsonEncoder.gen[CallType]
     implicit val decoder: JsonDecoder[CallType] = JsonDecoder[String].map {
-      case "select" => select
-      case "function" => function
-      case "select_function" => select_function
-      case "func_inout_cursor" => func_inout_cursor
-      case "dml_sql" => dml_sql
+      case "select" => Select
+      case "function" => Function
+      case "select_function" => Select_function
+      case "func_inout_cursor" => Func_inout_cursor
+      case "dml_sql" => Dml_sql
       case anyValue => throw new Exception(s"Invalid value in field call_type = $anyValue")
     }
 
     implicit val encoderRetType: JsonEncoder[RetType] = DeriveJsonEncoder.gen[RetType]
     implicit val decoderRetType: JsonDecoder[RetType] = JsonDecoder[String].map {
-      case "cursor" => cursor
-      case "dataset" => dataset
-      case "integer_value" => integer_value
-      case "affected_rows" => affected_rows
+      case "cursor" => Cursor
+      case "dataset" => Dataset
+      case "integer_value" => Integer_value
+      case "affected_rows" => Affected_rows
       case anyValue => throw new Exception(s"Invalid value in field ret_type = $anyValue")
     }
 
     implicit val encoderSucCond: JsonEncoder[SucCond] = DeriveJsonEncoder.gen[SucCond]
     implicit val decoderSucCond: JsonDecoder[SucCond] = JsonDecoder[String].map {
-      case "rows_gt" => rows_gt
-      case "rows_lt" => rows_lt
-      case "rows_eq" => rows_eq
-      case "rows_ne" => rows_ne
-      case "exec_time_ms" => exec_time_ms
-      case "fetch_time_ms" => fetch_time_ms
-      case "full_time_ms" => full_time_ms
-      case "fields_exists" => fields_exists
-      case "exec_exception" => exec_exception
+      case "rows_gt" => Rows_gt
+      case "rows_lt" => Rows_lt
+      case "rows_eq" => Rows_eq
+      case "rows_ne" => Rows_ne
+      case "exec_time_ms" => Exec_time_ms
+      case "fetch_time_ms" => Fetch_time_ms
+      case "full_time_ms" => Full_time_ms
+      case "fields_exists" => Fields_exists
+      case "exec_exception" => Exec_exception
       case anyValue => throw new Exception(s"Invalid value in field inside success_condition = $anyValue")
     }
 
