@@ -40,7 +40,7 @@ ThisBuild / scalaVersion := "2.13.10"
       val zio_conf_magnolia = "dev.zio" %% "zio-config-magnolia" % Versions.zio_config
 
       val zio_http = "dev.zio" %% "zio-http" % Versions.zio_http
-      val zio_json = "dev.zio"       %% "zio-json"       % Versions.zio_json
+      val zio_json = "dev.zio" %% "zio-json" % Versions.zio_json
 
       val zio_metrics = "dev.zio" %% "zio-metrics-connectors" % Versions.zio_metrics
 
