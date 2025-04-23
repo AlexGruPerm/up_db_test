@@ -93,12 +93,13 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
         case Exec_time_ms  => (testRes.execMs <= checkValue.getOrElse(0),Some(testRes.execMs))
         case Fetch_time_ms => (testRes.fetchMs <= checkValue.getOrElse(0),Some(testRes.fetchMs))
         case Full_time_ms  => (testRes.totalMs <= checkValue.getOrElse(0),Some(testRes.totalMs))
-        // ._1 - column name, _.2 - column type
         case Fields_exists  => (fields.getOrElse(List[String]()).forall(testRes.cols.map(cls => cls._1).contains),
           Some(1))
         case Exec_exception => (testRes.err.fold(false)(_ => true),Some(1))
         }
+      // Если testRes [TestExecutionResult] err содержит Some, то условия не проверяем
       this.copy(execResultValue = testResVal, conditionResult = Some(checkConditionRes))
+
     }
 
     /**
@@ -203,9 +204,9 @@ import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
      * with test's conditions (success_condition).
      */
     def checkConditions: Test = {
-      val checked_success_conditions: Option[List[SucCondElement]] = {
+      val checked_success_conditions: Option[List[SucCondElement]] =
         success_condition.map(lst => lst.map(sc => sc.check(testRes)))
-      }
+
       val newTestState: TestState = getState(checked_success_conditions)
       println(s"checkConditions newTestState=${newTestState}")
       this.copy(success_condition = checked_success_conditions,testState = newTestState)// testRes = this.testRes)

@@ -26,9 +26,10 @@ import common.types.Columns
     def apply(): TestExecutionResult =
       TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0)
 
-    def apply(excType:String, errMsg: String): TestExecutionResult =
+    def apply(excType:String, errMsg: String): TestExecutionResult = {
       TestExecutionResult(0L, 0L, 0L, IndexedSeq[(String, String)](), 0,
         err = Some(TestExecutionException(excType,errMsg)))
+    }
 
     def apply(timings: CallTimings, cols: Columns, rowCount: Int): TestExecutionResult =
       TestExecutionResult(timings.tFetch - timings.tBegin, timings.tFetch - timings.tExec,

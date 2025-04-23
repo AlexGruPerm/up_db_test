@@ -39,7 +39,7 @@ object WebUiApp {
   import data.EncDeccheckTestRepoDataImplicits._
   def checkTestsRepo(sid: SessionId): ZIO[ImplTestsRepo, IOException, Response] =
     for {
-      _ <- ZIO.logInfo("checkTestsRepo ")
+      //_ <- ZIO.logInfo("checkTestsRepo ")
       tr <- ZIO.service[ImplTestsRepo]
       info <- tr.checkTestRepoData(sid)
       resp <- ZIO.succeed(info match {

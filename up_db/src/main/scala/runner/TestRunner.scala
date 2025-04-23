@@ -125,10 +125,17 @@ import java.sql.{Connection, ResultSet}
     execDbCall: ZIO[Any, Throwable, TestExecutionResult] = ZIO.attemptBlocking {
       val stmt = connection.createStatement()
       val tBegin = System.currentTimeMillis
-      val rowsAffected: Int = stmt.executeUpdate(testInRepo.call);
+      val hasResultSet = stmt.execute(testInRepo.call)
+      val rowsAffected: Int =
+        if (hasResultSet) {
+          0// Обрабатываем результат для SELECT, если в нем вызывается функция
+        } else {
+          stmt.getUpdateCount // Получаем количество изменённых строк для INSERT/UPDATE/DELETE
+        }
       val tExec = System.currentTimeMillis
       val res: TestExecutionResult = {
-        val (cols: Columns, rows: ListRows) = (IndexedSeq[Column](),List[IndexedSeq[String]]())
+        //val (cols: Columns, rows: ListRows) = (IndexedSeq[Column](),List[IndexedSeq[String]]())
+        val cols: Columns = IndexedSeq[Column]()
         val tFetch = System.currentTimeMillis
         TestExecutionResult(CallTimings(tBegin,tExec,tFetch), cols, rowsAffected)
       }
@@ -137,7 +144,7 @@ import java.sql.{Connection, ResultSet}
       connection.close()
       res
     }
-    execDbCallCatched = catchAllErrs(execDbCall)
+    execDbCallCatched = catchAllErrsWithCommit(execDbCall,connection)
     _ <- execCallUpdateTestInRepo(execDbCallCatched,testInRepo)
   } yield ()
 
@@ -166,13 +173,34 @@ import java.sql.{Connection, ResultSet}
     _ <- execCallUpdateTestInRepo(execDbCallCatched,testInRepo)
   } yield ()
 
-  private def catchAllErrs(eff: ZIO[Any, Throwable, TestExecutionResult]): UIO[TestExecutionResult] = for {
-    effAfterCatch <- eff.catchAllDefect {
-      case e: Exception => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getClass.getName,e.getMessage))
-    }.catchAll {
-      e: Throwable => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getClass.getName,e.getMessage))
-    }
-  } yield effAfterCatch
+  private def catchAllErrs(eff: ZIO[Any, Throwable, TestExecutionResult]): UIO[TestExecutionResult] =
+    eff
+      .tapError(e => ZIO.logError(s"Expected failure: ${e.getMessage}"))
+      .catchAll {
+        e => ZIO.succeed(TestExecutionResult(e.getClass.getName, e.getMessage))
+      }
+
+    private def catchAllErrsWithCommit(eff: ZIO[Any, Throwable, TestExecutionResult],connection: Connection): UIO[TestExecutionResult] =
+      eff
+        .tapError(e => ZIO.logError(s"Expected failure: ${e.getMessage}"))
+        .catchAll {  // Ловим ожидаемые ошибки (Throwable)
+          e => //ZIO.logInfo(s"Error ${e.getMessage} ${e.getClass.getName}") *>
+            ZIO.attemptBlocking {
+              println("******* DEBUG COMMIT AND CLOSE CONNECTION ***********")
+              connection.commit()
+              connection.close()
+            }.as(TestExecutionResult(e.getClass.getName, e.getMessage))
+        }.orDie
+
+  /**
+   private def catchAllErrs(eff: ZIO[Any, Throwable, TestExecutionResult]): UIO[TestExecutionResult] = for {
+   effAfterCatch <- eff.catchAllDefect {
+   case e: Exception => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getClass.getName,e.getMessage))
+   }.catchAll {
+   e: Throwable => ZIO.logError(e.getMessage).as(TestExecutionResult(e.getClass.getName,e.getMessage))
+   }
+   } yield effAfterCatch
+  */
 
   private def exec(testInRepo: Test): ZIO[TestsMeta with jdbcSession, Exception, Unit] = for {
     jdbc <- ZIO.service[jdbcSession]
